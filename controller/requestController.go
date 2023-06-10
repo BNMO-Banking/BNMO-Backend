@@ -106,7 +106,7 @@ func DisplayRequests(c *gin.Context) {
 
 	var total int64
 	var requests []models.Request
-	var formattedRequests []map[string]interface{}
+	formattedRequests := make([]map[string]interface{}, 0)
 
 	// Pull data from the requests table inside the database
 	// Pull only based on the number of offsets and limits specified
