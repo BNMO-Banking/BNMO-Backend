@@ -3,7 +3,6 @@ package controller
 import (
 	"BNMO/database"
 	"BNMO/models"
-	"fmt"
 	"log"
 	"math"
 	"net/http"
@@ -25,16 +24,21 @@ func AddDestination(c *gin.Context) {
 		return
 	}
 
-	database.DATABASE.Find(&userAccount, request.Id)
-	fmt.Println(userAccount.ID, userAccount.FirstName)
-
+	database.DATABASE.Preload("TransferDestination").Find(&userAccount, request.Id)
+	
 	database.DATABASE.Where("account_number=?", request.DestinationNumber).First(&destinationAccount)
-	fmt.Println(destinationAccount.ID, destinationAccount.FirstName)
 	if destinationAccount.ID == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No account found with given number"})
 		return
 	}
 
+	for _, transferDestination := range userAccount.TransferDestination {
+		if (transferDestination.ID == destinationAccount.ID) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Account already added"})
+			return
+		}
+	}
+	
 	userAccount.TransferDestination = append(userAccount.TransferDestination, &destinationAccount)
 
 	database.DATABASE.Save(&userAccount)
@@ -64,7 +68,7 @@ func CheckDestination(c *gin.Context) {
 
 func GetDestination(c *gin.Context) {
 	var account models.Account
-	var response []models.DestinationResponse
+	response := make([]models.DestinationResponse, 0)
 
 	id, err := strconv.Atoi(c.Query("id"))
 	if err != nil {
