@@ -3,7 +3,7 @@ package controller
 import (
 	"BNMO/database"
 	"BNMO/models"
-	"BNMO/utilities"
+	"BNMO/token"
 	"database/sql"
 	"fmt"
 	"log"
@@ -152,27 +152,33 @@ func LoginAccount(c *gin.Context) {
 
 	if account.AccountStatus.String == "accepted" {	
 		// Authenticate user
-		token, err := utilities.GenerateJWT(strconv.Itoa(int(account.ID)))
 		if err != nil {
 			log.Println("Login failed: Failed generating JWT", err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Failed to generate JWT"})
 			return
 		}
 
-		// Set cookies
-		c.SetCookie("jwt", token, 3600, "/", "localhost", false, true)
-		c.JSON(http.StatusOK, gin.H{"account": gin.H{
-			"ID": account.ID,
-			"is_admin": account.IsAdmin.Bool,
-			"first_name": account.FirstName,
-			"last_name": account.LastName,
-			"email": account.Email,
-			"username": account.Username,
-			"image_path": account.ImagePath,
-			"account_number": account.AccountNumber,
-			"balance": account.Balance,
-			"CreatedAt": account.CreatedAt,
-		},
+		token, err := token.GenerateJWT(strconv.Itoa(int(account.ID)))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Error generating token"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"account": gin.H{
+				"ID": account.ID,
+				"is_admin": account.IsAdmin.Bool,
+				"first_name": account.FirstName,
+				"last_name": account.LastName,
+				"email": account.Email,
+				"username": account.Username,
+				"image_path": account.ImagePath,
+				"account_number": account.AccountNumber,
+				"balance": account.Balance,
+				"CreatedAt": account.CreatedAt,
+			},
+			"token": token,
+			"accountStatus": account.AccountStatus.String,
 			"message": "Login successful"})
 	} else if account.AccountStatus.String == "pending" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Account isn't verified. Please wait for validation"})

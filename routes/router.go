@@ -18,7 +18,7 @@ func MapUrls(Router *gin.Engine) {
 	Router.Static("/images", "images")
 
 	// Authorized side (both customer and admin)
-	Router.Use(middleware.IsAuthenticate)
+	Router.Use(middleware.JWTAuthMiddleware())
 	// Poll endpoint for updating balance
 	Router.GET("/update-balance", controller.UpdateBalance)
 	// Get exchange symbols
