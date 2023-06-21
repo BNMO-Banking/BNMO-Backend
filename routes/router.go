@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"BNMO/controller"
+	"BNMO/controllers"
 	"BNMO/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -9,72 +9,72 @@ import (
 
 func MapUrls(Router *gin.Engine) {
 	// Register account
-	Router.POST("/register", controller.RegisterAccount)
+	Router.POST("/register", controllers.RegisterAccount)
 	// Login account
-	Router.POST("/login", controller.LoginAccount)
+	Router.POST("/login", controllers.LoginAccount)
 	// Logout accounts
-	Router.POST("/logout", controller.LogoutAccount)
+	Router.POST("/logout", controllers.LogoutAccount)
 	// Server static folder (at /images)
 	Router.Static("/images", "images")
 
 	// Authorized side (both customer and admin)
 	Router.Use(middleware.JWTAuthMiddleware())
 	// Poll endpoint for updating balance
-	Router.GET("/update-balance", controller.UpdateBalance)
+	Router.GET("/update-balance", controllers.UpdateBalance)
 	// Get exchange symbols
-	Router.GET("/get-symbols", controller.GetSymbols)
+	Router.GET("/get-symbols", controllers.GetSymbols)
 
 	/* CUSTOMER SIDE */
 	/** REQUEST PAGE (ADD / SUBTRACT) **/
 	// Request money (add / subtract)
-	Router.POST("/request-money", controller.RequestMoney)
+	Router.POST("/request-money", controllers.AddRequest)
 	
 	/** TRANSFER PAGE **/
 	// Get transfer destination based on id
-	Router.GET("/get-destination", controller.GetDestination)
+	Router.GET("/get-destination", controllers.GetDestination)
 	// Check transfer destination in the database
-	Router.POST("/check-destination", controller.CheckDestination)
+	Router.POST("/check-destination", controllers.CheckDestination)
 	// Add transfer destination to user
-	Router.POST("/add-destination", controller.AddDestination)
+	Router.POST("/add-destination", controllers.AddDestination)
 	// Transfer from source account to destination account
-	Router.POST("/transfer", controller.Transfer)
+	Router.POST("/transfer", controllers.Transfer)
 
 	/** HISTORY PAGE **/
 	// Get request history
-	Router.GET("/request-history", controller.RequestHistory)
+	Router.GET("/request-history", controllers.RequestHistory)
 	// Get transfer history
-	Router.GET("/transfer-history", controller.TransferHistory)
+	Router.GET("/transfer-history", controllers.TransferHistory)
 
 	/** PROFILE PAGE **/
 	// Change image
-	Router.PUT("/change-image", controller.ChangeImage)
+	Router.PUT("/change-image", controllers.ChangeImage)
 	// Check PIN
-	Router.GET("/check-pin", controller.CheckPin)
+	Router.GET("/check-pin", controllers.CheckPin)
 	// Change PIN (only once)
-	Router.PUT("/change-pin", controller.ChangePin)
+	Router.PUT("/change-pin", controllers.ChangePin)
 	// Change Password
-	Router.PUT("/change-password", controller.ChangePassword)
+	Router.PUT("/change-password", controllers.ChangePassword)
 	
 	/* ADMIN SIDE */
 	/** VALIDATE REQUEST PAGE **/
 	// Display requests for admin
-	Router.GET("/admin/get-pending-request", controller.DisplayRequests)
+	Router.GET("/admin/get-pending-request", controllers.DisplayRequests)
 	// Validate selected requests for admin
-	Router.POST("/admin/validate-request", controller.ValidateRequests)
+	Router.POST("/admin/validate-request", controllers.ValidateRequests)
 
 	/** VALIDATE ACCOUNT PAGE **/
 	// Display pending accounts for admin
-	Router.GET("/admin/get-pending-account", controller.DisplayPendingAccount)
+	Router.GET("/admin/get-pending-account", controllers.DisplayPendingAccount)
 	// Validate selected accounts for admin
-	Router.POST("/admin/validate-account", controller.ValidateAccount)
+	Router.POST("/admin/validate-account", controllers.ValidateAccount)
 	
 	/** CUSTOMER DATA PAGE **/
 	// Display all customer data
-	Router.GET("/admin/get-customer-data", controller.SendAllCustomerData)
+	Router.GET("/admin/get-customer-data", controllers.SendAllCustomerData)
 	// Edit data
-	Router.PUT("/admin/edit-data", controller.EditData)
+	Router.PUT("/admin/edit-data", controllers.EditData)
 	// Reset PIN
-	Router.PUT("/admin/reset-pin", controller.ResetPIN)
+	Router.PUT("/admin/reset-pin", controllers.ResetPIN)
 	// Delete account
-	Router.DELETE("admin/delete-account", controller.DeleteAccount)
+	Router.DELETE("admin/delete-account", controllers.DeleteAccount)
 }
