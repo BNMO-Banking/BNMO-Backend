@@ -11,8 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-
-
 // Admin accept or reject requests
 func ValidateRequests(c *gin.Context) {
 	var validate models.ValidateRequest
@@ -72,9 +70,11 @@ func ValidateRequests(c *gin.Context) {
 }
 
 // Admin display requests
-func DisplayRequests(c *gin.Context) {
+func GetPendingRequests(c *gin.Context) {
 	// Specify limitations
 	page, _ := strconv.Atoi(c.Query("page"))
+	// filterType := c.DefaultQuery("filter", "")
+	// filterKey := c.DefaultQuery("key", "")
 	limit := 5
 	offset := (page-1) * limit
 

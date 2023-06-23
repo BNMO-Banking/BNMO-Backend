@@ -58,7 +58,7 @@ func MapUrls(Router *gin.Engine) {
 	/* ADMIN SIDE */
 	/** VALIDATE REQUEST PAGE **/
 	// Display requests for admin
-	Router.GET("/admin/get-pending-request", controllers.DisplayRequests)
+	Router.GET("/admin/get-pending-request", controllers.GetPendingRequests)
 	// Validate selected requests for admin
 	Router.POST("/admin/validate-request", controllers.ValidateRequests)
 
