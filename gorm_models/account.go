@@ -7,6 +7,6 @@ type Account struct {
 	Username      string `json:"username" gorm:"not_null"`
 	FirstName     string `json:"first_name" gorm:"not_null"`
 	LastName      string `json:"last_name"`
-	password      []byte `gorm:"not_null"`
+	Password      []byte `gorm:"not_null"`
 	AccountType   string `gorm:"not_null"`
 }
