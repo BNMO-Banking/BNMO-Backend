@@ -8,7 +8,7 @@ import (
 
 type Admin struct {
 	Base
-	Role      enum.AccountRole `json:"role"`
-	Account   Account          `json:"account"`
+	Role      enum.AccountRole
+	Account   Account
 	AccountID uuid.UUID
 }
