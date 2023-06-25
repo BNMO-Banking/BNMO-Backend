@@ -5,15 +5,13 @@ import (
 	"BNMO/enum"
 	gormmodels "BNMO/gorm_models"
 	"BNMO/models"
+	"BNMO/token"
 	"BNMO/utils"
 	"errors"
 	"net/http"
-	"os"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -65,30 +63,30 @@ func RegisterAccount(c *gin.Context) {
 	filePath := utils.SaveFile(c, request.IdCard)
 
 	// Hashing password
-	salt, err := strconv.Atoi(os.Getenv("PASS_SALT"))
-	if err != nil {
-		utils.HandleInternalServerError(c, err, "Register", "Failed to get salt")
-		return
-	}
-
-	password, err := bcrypt.GenerateFromPassword([]byte(request.Password), salt)
+	password, err := utils.HashPassword(request.Password)
 	if err != nil {
 		utils.HandleInternalServerError(c, err, "Register", "Failed to hash password")
-		return
 	}
 
 	// Create new data entry
-	newAccount := gormmodels.Customer{
-		Status:      enum.ACCOUNT_PENDING,
-		PhoneNumber: request.PhoneNumber,
-		IdCardPath:  filePath,
-		Account: gormmodels.Account{
-			FirstName:   request.FirstName,
-			LastName:    request.LastName,
-			Email:       request.Email,
-			Username:    request.Username,
-			Password:    password,
-			AccountType: enum.CUSTOMER,
+	newAccount := gormmodels.CustomerAddress{
+		AddressLine1: request.AddressLine1,
+		AddressLine2: request.AddressLine2,
+		State:        request.State,
+		PostalCode:   request.PostalCode,
+		Country:      request.Country,
+		Customer: gormmodels.Customer{
+			Status:      enum.ACCOUNT_PENDING,
+			PhoneNumber: request.PhoneNumber,
+			IdCardPath:  filePath,
+			Account: gormmodels.Account{
+				FirstName:   request.FirstName,
+				LastName:    request.LastName,
+				Email:       request.Email,
+				Username:    request.Username,
+				Password:    password,
+				AccountType: enum.CUSTOMER,
+			},
 		},
 	}
 
@@ -96,74 +94,82 @@ func RegisterAccount(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Registration successful. Please wait for validation"})
 }
 
-// func LoginAccount(c *gin.Context) {
-// 	var request models.LoginRequest
-// 	var account models.Account
+func LoginAccount(c *gin.Context) {
+	var request models.LoginReq
+	var account gormmodels.Account
 
-// 	// Bind arriving json into login model
-// 	err := c.BindJSON(&request)
-// 	if err != nil {
-// 		log.Println("Login failed: Failed binding json", err.Error())
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Failed binding request"})
-// 		return
-// 	}
+	// Bind arriving json into login model
+	err := c.BindJSON(&request)
+	if err != nil {
+		utils.HandleBadRequest(c, "Login", "Failed to bind request")
+		return
+	}
 
-// 	// Check if email exists inside the database
-// 	database.DATABASE.Where("email=?", request.Email).First(&account)
-// 	if account.ID == 0 {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Email does not exist"})
-// 		return
-// 	}
+	// Fetch account
+	err = database.DB.Where("email=? OR username=?", request.EmailUsername).First(&account).Error
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		utils.HandleBadRequest(c, "Login", "Email / username is incorrect")
+		return
+	}
 
-// 	// Check password validity
-// 	err = account.ComparePassword(request.Password)
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Incorrect password"})
-// 		return
-// 	}
+	// Compare password
+	err = utils.ComparePassword(request.Password, account.Password)
+	if err != nil {
+		utils.HandleBadRequest(c, "Login", "Incorrect password")
+	}
 
-// 	if account.AccountStatus.String == "accepted" {
-// 		// Authenticate user
-// 		if err != nil {
-// 			log.Println("Login failed: Failed generating JWT", err.Error())
-// 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Failed to generate JWT"})
-// 			return
-// 		}
+	// Check if admin or customer
+	if account.AccountType == enum.ADMIN {
+		var admin gormmodels.Admin
 
-// 		token, err := token.GenerateJWT(strconv.Itoa(int(account.ID)))
-// 		if err != nil {
-// 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Error generating token"})
-// 			return
-// 		}
+		database.DB.Where("account_id?=", account.ID).First(&admin)
 
-// 		c.JSON(http.StatusOK, gin.H{
-// 			"account": gin.H{
-// 				"ID":             account.ID,
-// 				"is_admin":       account.IsAdmin.Bool,
-// 				"first_name":     account.FirstName,
-// 				"last_name":      account.LastName,
-// 				"email":          account.Email,
-// 				"username":       account.Username,
-// 				"image_path":     account.ImagePath,
-// 				"account_number": account.AccountNumber,
-// 				"balance":        account.Balance,
-// 				"CreatedAt":      account.CreatedAt,
-// 			},
-// 			"token":         token,
-// 			"accountStatus": account.AccountStatus.String,
-// 			"message":       "Login successful"})
-// 	} else if account.AccountStatus.String == "pending" {
-// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Account isn't verified. Please wait for validation"})
-// 		return
-// 	} else if account.AccountStatus.String == "rejected" {
-// 		c.JSON(http.StatusForbidden, gin.H{"error": "Account is rejected. Please contact our support"})
-// 		return
-// 	}
-// }
+		token, err := token.GenerateJWT(account.ID.String())
+		if err != nil {
+			utils.HandleInternalServerError(c, err, "Login", "Failed to generate token")
+		}
 
-func LoginAccount(c *gin.Context)
+		resAccount := models.LoginResAccount{
+			Email:       account.Email,
+			Username:    account.Username,
+			AccountType: account.AccountType,
+			AccountRole: admin.Role,
+		}
+		c.JSON(http.StatusOK, models.LoginRes{
+			Account: resAccount,
+			Token:   token,
+		},
+		)
+	} else if account.AccountType == enum.CUSTOMER {
+		var customer gormmodels.Customer
+		// Check account validation status
+		database.DB.Where("account_id=?", account.ID).First(&customer)
+		if customer.Status == enum.ACCOUNT_ACCEPTED {
+			token, err := token.GenerateJWT(account.ID.String())
+			if err != nil {
+				utils.HandleInternalServerError(c, err, "Login", "Failed to generate token")
+			}
+
+			resAccount := models.LoginResAccount{
+				Email:       account.Email,
+				Username:    account.Username,
+				AccountType: account.AccountType,
+			}
+			c.JSON(http.StatusOK, models.LoginRes{
+				Account: resAccount,
+				Token:   token,
+			},
+			)
+		} else if customer.Status == enum.ACCOUNT_PENDING {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Account isn't verified. Please wait for validation"})
+			return
+		} else if customer.Status == enum.ACCOUNT_REJECTED {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Account is rejected. Please contact our support"})
+			return
+		}
+	}
+}
 
 func LogoutAccount(c *gin.Context) {
-	c.SetCookie("jwt", "", -1, "", "", false, true)
 	c.JSON(http.StatusOK, gin.H{"message": "Log out successful"})
 }

@@ -3,7 +3,11 @@ package utils
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"regexp"
+	"strconv"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func ValidateEmail(email string) bool {
@@ -35,4 +39,22 @@ func GenerateCardNumber() string {
 	fourthSequel := rand.Intn(10000)
 
 	return fmt.Sprintf(format, firstSequel, secondSequel, thirdSequel, fourthSequel)
+}
+
+func HashPassword(password string) ([]byte, error) {
+	salt, err := strconv.Atoi(os.Getenv("PASS_SALT"))
+	if err != nil {
+		return nil, err
+	}
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), salt)
+	if err != nil {
+		return nil, err
+	}
+
+	return hashed, nil
+}
+
+func ComparePassword(password1 string, password2 []byte) error {
+	return bcrypt.CompareHashAndPassword([]byte(password1), password2)
 }
