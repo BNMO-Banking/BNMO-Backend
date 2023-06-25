@@ -2,191 +2,174 @@ package controllers
 
 import (
 	"BNMO/database"
+	"BNMO/enum"
+	gormmodels "BNMO/gorm_models"
 	"BNMO/models"
 	"BNMO/token"
-	"fmt"
-	"log"
-	"math/rand"
+	"BNMO/utils"
+	"errors"
 	"net/http"
-	"regexp"
-	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-func validateEmail(email string) bool {
-	Re := regexp.MustCompile(`[a-z0-9. %+\-]+@[a-z0-9. %+\-]+\.[a-z0-9. %+\-]`)
-	return Re.MatchString(email)
-}
-
-func generateAccountNumber() string {
-	firstSequel := strconv.Itoa(rand.Intn(1000))
-	if len(firstSequel) < 3 {
-		firstSequel = "0" + firstSequel
-	} else if len(firstSequel) < 2 {
-		firstSequel = "00" + firstSequel
-	}
-
-	secondSequel := strconv.Itoa(rand.Intn(1000))
-	if len(secondSequel) < 3 {
-		secondSequel = "0" + secondSequel
-	} else if len(secondSequel) < 2 {
-		secondSequel = "00" + secondSequel
-	}
-
-	thirdSequel := strconv.Itoa(rand.Intn(10000))
-	if len(thirdSequel) < 4 {
-		thirdSequel = "0" + thirdSequel
-	} else if len(thirdSequel) < 3 {
-		thirdSequel = "00" + thirdSequel
-	} else if len(thirdSequel) < 2 {
-		thirdSequel = "000" + thirdSequel
-	}
-
-	return fmt.Sprintf("%s-%s-%s", firstSequel, secondSequel, thirdSequel)
-}
-
 func RegisterAccount(c *gin.Context) {
-	var request models.RegisterRequest
-	var accountData models.Account
+	var request models.RegisterReq
+	var account gormmodels.Account
 
-	// Bind arriving json into register model
 	err := c.Bind(&request)
 	if err != nil {
-		log.Println("Register failed: Failed binding form data", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Failed binding request"})
+		utils.HandleInternalServerError(c, err, "Register", "Failed to bind request")
 		return
 	}
 
-	// Check if the length of password is less than 8 characters
+	// Validate password
 	if len(request.Password) < 8 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Password must be 8 characters or more"})
+		utils.HandleBadRequest(c, "Register", "Password too short")
+		return
+	} else if strings.Compare(request.Password, request.ConfirmPassword) != 0 {
+		utils.HandleBadRequest(c, "Register", "Confirm password do not match")
 		return
 	}
 
-	// Validate the email
-	if !validateEmail(request.Email) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid email address"})
+	// Validate email and availability
+	if !utils.ValidateEmail(request.Email) {
+		utils.HandleBadRequest(c, "Register", "Invalid email")
 		return
 	}
 
-	// Check if email already exist within the database
-	database.DATABASE.Where("email=?", request.Email).First(&accountData)
-	if accountData.ID != 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Email already exists"})
+	err = database.DB.Where("email=?", request.Email).First(&account).Error
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		utils.HandleBadRequest(c, "Register", "Email already exist")
 		return
 	}
 
-	// Check if username already exist within the database
-	database.DATABASE.Where("username=?", request.Username).First(&accountData)
-	if accountData.ID != 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Username already exists"})
+	// Validate phone number
+	if !utils.ValidatePhoneNumber(request.PhoneNumber) {
+		utils.HandleBadRequest(c, "Register", "Invalid phone number")
 		return
 	}
 
-	// Write image to folder
-	fileName := uuid.New().String() + request.Image.Filename
-	filePath := "./images/" + fileName
-	err = c.SaveUploadedFile(request.Image, filePath)
+	// Validate username availability
+	err = database.DB.Where("username=?", request.Username).First(&account).Error
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		utils.HandleBadRequest(c, "Register", "Username already taken")
+		return
+	}
+
+	// File handling
+	filePath := utils.SaveFile(c, request.IdCard)
+
+	// Hashing password
+	password, err := utils.HashPassword(request.Password)
 	if err != nil {
-		log.Println("Register failed: Failed in saving file", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Failed in saving file"})
-		return
+		utils.HandleInternalServerError(c, err, "Register", "Failed to hash password")
 	}
 
-	storedFilePath := "http://localhost:8080/images/" + fileName
-
-	// Insert register data to account model
-	account := models.Account{
-		FirstName: request.FirstName,
-		LastName:  request.LastName,
-		Email:     request.Email,
-		Username:  request.Username,
-		ImagePath: storedFilePath,
+	// Create new data entry
+	newAccount := gormmodels.CustomerAddress{
+		AddressLine1: request.AddressLine1,
+		AddressLine2: request.AddressLine2,
+		State:        request.State,
+		PostalCode:   request.PostalCode,
+		Country:      request.Country,
+		Customer: gormmodels.Customer{
+			Status:      enum.ACCOUNT_PENDING,
+			PhoneNumber: request.PhoneNumber,
+			IdCardPath:  filePath,
+			Account: gormmodels.Account{
+				FirstName:   request.FirstName,
+				LastName:    request.LastName,
+				Email:       request.Email,
+				Username:    request.Username,
+				Password:    password,
+				AccountType: enum.CUSTOMER,
+			},
+		},
 	}
 
-	// Hash password using bcrypt
-	account.SetPassword(request.Password)
-
-	// Insert the data into the database
-	insert := database.DATABASE.Create(&account)
-	if insert.Error != nil {
-		log.Println("Register failed: Failed inserting to database", insert.Error.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Failed to insert account to database"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Account successfully registered. Please wait for validation."})
+	database.DB.Create(newAccount)
+	c.JSON(http.StatusOK, gin.H{"message": "Registration successful. Please wait for validation"})
 }
 
 func LoginAccount(c *gin.Context) {
-	var request models.LoginRequest
-	var account models.Account
+	var request models.LoginReq
+	var account gormmodels.Account
 
 	// Bind arriving json into login model
 	err := c.BindJSON(&request)
 	if err != nil {
-		log.Println("Login failed: Failed binding json", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Failed binding request"})
+		utils.HandleBadRequest(c, "Login", "Failed to bind request")
 		return
 	}
 
-	// Check if email exists inside the database
-	database.DATABASE.Where("email=?", request.Email).First(&account)
-	if account.ID == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Email does not exist"})
+	// Fetch account
+	err = database.DB.Where("email=? OR username=?", request.EmailUsername).First(&account).Error
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		utils.HandleBadRequest(c, "Login", "Email / username is incorrect")
 		return
 	}
 
-	// Check password validity
-	err = account.ComparePassword(request.Password)
+	// Compare password
+	err = utils.ComparePassword(request.Password, account.Password)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Incorrect password"})
-		return
+		utils.HandleBadRequest(c, "Login", "Incorrect password")
 	}
 
-	if account.AccountStatus.String == "accepted" {
-		// Authenticate user
+	// Check if admin or customer
+	if account.AccountType == enum.ADMIN {
+		var admin gormmodels.Admin
+
+		database.DB.Where("account_id?=", account.ID).First(&admin)
+
+		token, err := token.GenerateJWT(account.ID.String())
 		if err != nil {
-			log.Println("Login failed: Failed generating JWT", err.Error())
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Failed to generate JWT"})
-			return
+			utils.HandleInternalServerError(c, err, "Login", "Failed to generate token")
 		}
 
-		token, err := token.GenerateJWT(strconv.Itoa(int(account.ID)))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Error generating token"})
-			return
+		resAccount := models.LoginResAccount{
+			Email:       account.Email,
+			Username:    account.Username,
+			AccountType: account.AccountType,
+			AccountRole: admin.Role,
 		}
+		c.JSON(http.StatusOK, models.LoginRes{
+			Account: resAccount,
+			Token:   token,
+		},
+		)
+	} else if account.AccountType == enum.CUSTOMER {
+		var customer gormmodels.Customer
+		// Check account validation status
+		database.DB.Where("account_id=?", account.ID).First(&customer)
+		if customer.Status == enum.ACCOUNT_ACCEPTED {
+			token, err := token.GenerateJWT(account.ID.String())
+			if err != nil {
+				utils.HandleInternalServerError(c, err, "Login", "Failed to generate token")
+			}
 
-		c.JSON(http.StatusOK, gin.H{
-			"account": gin.H{
-				"ID":             account.ID,
-				"is_admin":       account.IsAdmin.Bool,
-				"first_name":     account.FirstName,
-				"last_name":      account.LastName,
-				"email":          account.Email,
-				"username":       account.Username,
-				"image_path":     account.ImagePath,
-				"account_number": account.AccountNumber,
-				"balance":        account.Balance,
-				"CreatedAt":      account.CreatedAt,
+			resAccount := models.LoginResAccount{
+				Email:       account.Email,
+				Username:    account.Username,
+				AccountType: account.AccountType,
+			}
+			c.JSON(http.StatusOK, models.LoginRes{
+				Account: resAccount,
+				Token:   token,
 			},
-			"token":         token,
-			"accountStatus": account.AccountStatus.String,
-			"message":       "Login successful"})
-	} else if account.AccountStatus.String == "pending" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Account isn't verified. Please wait for validation"})
-		return
-	} else if account.AccountStatus.String == "rejected" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Account is rejected. Please contact our support"})
-		return
+			)
+		} else if customer.Status == enum.ACCOUNT_PENDING {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Account isn't verified. Please wait for validation"})
+			return
+		} else if customer.Status == enum.ACCOUNT_REJECTED {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Account is rejected. Please contact our support"})
+			return
+		}
 	}
 }
 
 func LogoutAccount(c *gin.Context) {
-	c.SetCookie("jwt", "", -1, "", "", false, true)
 	c.JSON(http.StatusOK, gin.H{"message": "Log out successful"})
 }

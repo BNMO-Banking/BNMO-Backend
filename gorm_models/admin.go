@@ -1,10 +1,14 @@
 package gormmodels
 
-import "github.com/google/uuid"
+import (
+	"BNMO/enum"
+
+	"github.com/google/uuid"
+)
 
 type Admin struct {
 	Base
-	Role      string  `json:"role"`
-	Account   Account `json:"account"`
+	Role      enum.AccountRole
+	Account   Account
 	AccountID uuid.UUID
 }
