@@ -6,20 +6,20 @@ import (
 )
 
 type RegisterReq struct {
-	FirstName       string                `json:"first_name"`
-	LastName        string                `json:"last_name"`
-	AddressLine1    string                `json:"address_line1"`
-	AddressLine2    string                `json:"address_line2"`
-	City            string                `json:"city"`
-	State           string                `json:"state"`
-	PostalCode      string                `json:"postal_code"`
-	Country         string                `json:"country"`
-	Email           string                `json:"email"`
-	Username        string                `json:"username"`
-	PhoneNumber     string                `json:"phone_number"`
-	IdCard          *multipart.FileHeader `json:"id_card"`
-	Password        string                `json:"password"`
-	ConfirmPassword string                `json:"confirm_password"`
+	FirstName       string                `form:"first_name"`
+	LastName        string                `form:"last_name"`
+	Email           string                `form:"email"`
+	Username        string                `form:"username"`
+	PhoneNumber     string                `form:"phone_number"`
+	AddressLine1    string                `form:"address_line1"`
+	AddressLine2    string                `form:"address_line2"`
+	City            string                `form:"city"`
+	State           string                `form:"state"`
+	PostalCode      string                `form:"postal_code"`
+	Country         string                `form:"country"`
+	IdCard          *multipart.FileHeader `form:"id_card"`
+	Password        string                `form:"password"`
+	ConfirmPassword string                `form:"confirm_password"`
 }
 
 type LoginReq struct {
