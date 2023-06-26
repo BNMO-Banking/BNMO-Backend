@@ -28,8 +28,8 @@ func UpdateImage(c *gin.Context) {
 		fmt.Println("Failed to delete file" + err.Error())
 		return
 	}
-	
+
 	// Access account tables on database based on the id and change the url
-	database.DATABASE.First(&account, uint(data["id"].(float64))).Update("image_path", data["new_url"].(string))
+	database.DB.First(&account, uint(data["id"].(float64))).Update("image_path", data["new_url"].(string))
 	c.JSON(http.StatusOK, gin.H{"message": "Image updated successfully"})
 }

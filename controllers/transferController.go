@@ -24,24 +24,24 @@ func AddDestination(c *gin.Context) {
 		return
 	}
 
-	database.DATABASE.Preload("TransferDestination").Find(&userAccount, request.Id)
-	
-	database.DATABASE.Where("account_number=?", request.DestinationNumber).First(&destinationAccount)
+	database.DB.Preload("TransferDestination").Find(&userAccount, request.Id)
+
+	database.DB.Where("account_number=?", request.DestinationNumber).First(&destinationAccount)
 	if destinationAccount.ID == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No account found with given number"})
 		return
 	}
 
 	for _, transferDestination := range userAccount.TransferDestination {
-		if (transferDestination.ID == destinationAccount.ID) {
+		if transferDestination.ID == destinationAccount.ID {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Account already added"})
 			return
 		}
 	}
-	
+
 	userAccount.TransferDestination = append(userAccount.TransferDestination, &destinationAccount)
 
-	database.DATABASE.Save(&userAccount)
+	database.DB.Save(&userAccount)
 	c.JSON(http.StatusOK, gin.H{"message": "Destination successfully added"})
 }
 
@@ -57,13 +57,13 @@ func CheckDestination(c *gin.Context) {
 		return
 	}
 
-	database.DATABASE.Where("account_number=?", request.DestinationNumber).First(&account)
+	database.DB.Where("account_number=?", request.DestinationNumber).First(&account)
 	if account.ID == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No account found with given number"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"name": account.FirstName + " " +  account.LastName})
+	c.JSON(http.StatusOK, gin.H{"name": account.FirstName + " " + account.LastName})
 }
 
 func GetDestination(c *gin.Context) {
@@ -77,15 +77,15 @@ func GetDestination(c *gin.Context) {
 		return
 	}
 
-	database.DATABASE.Find(&account, id)
-	database.DATABASE.Model(&account).Association("TransferDestination").Find(&account.TransferDestination)
+	database.DB.Find(&account, id)
+	database.DB.Model(&account).Association("TransferDestination").Find(&account.TransferDestination)
 
 	for _, account := range account.TransferDestination {
 		response = append(response, models.DestinationResponse{
 			AccountNumber: account.AccountNumber,
-			FirstName: account.FirstName,
-			LastName: account.LastName,
-			Username: account.Username,
+			FirstName:     account.FirstName,
+			LastName:      account.LastName,
+			Username:      account.Username,
 		})
 	}
 
@@ -112,18 +112,18 @@ func Transfer(c *gin.Context) {
 	transfer.ConvertedAmount = newAmount
 
 	// Pull data from accounts table
-	create := database.DATABASE.Create(&transfer)
+	create := database.DB.Create(&transfer)
 	if create.Error != nil {
 		log.Println("Transfer failed: Failed inserting to database", create.Error.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Failed inserting transfer to database"})
 		return
 	}
-	database.DATABASE.Find(&source, transfer.SourceID)
-	database.DATABASE.Where("account_number=?", transfer.Destination).First(&destination)
+	database.DB.Find(&source, transfer.SourceID)
+	database.DB.Where("account_number=?", transfer.Destination).First(&destination)
 
 	// If balance is insufficient
 	if source.Balance < newAmount {
-		database.DATABASE.Model(&transfer).Update("status", "failed")
+		database.DB.Model(&transfer).Update("status", "failed")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Insufficient balance"})
 		return
 	}
@@ -134,8 +134,8 @@ func Transfer(c *gin.Context) {
 	newDestinationBalance := destination.Balance + newAmount
 
 	// Update database values
-	database.DATABASE.Find(&source, transfer.SourceID).Update("balance", newSourceBalance)
-	database.DATABASE.Find(&destination, transfer.Destination).Update("balance", newDestinationBalance)
-	database.DATABASE.Model(&transfer).Update("status", "success")
+	database.DB.Find(&source, transfer.SourceID).Update("balance", newSourceBalance)
+	database.DB.Find(&destination, transfer.Destination).Update("balance", newDestinationBalance)
+	database.DB.Model(&transfer).Update("status", "success")
 	c.JSON(http.StatusOK, gin.H{"message": "Transfer completed"})
 }

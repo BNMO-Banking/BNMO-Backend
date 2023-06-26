@@ -30,7 +30,7 @@ func ChangeImage(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Failed converting id to integer"})
 		return
 	}
-	database.DATABASE.Find(&account, id)
+	database.DB.Find(&account, id)
 
 	// Delete old file
 	err = os.Remove("./images/" + request.OldName)
@@ -53,7 +53,7 @@ func ChangeImage(c *gin.Context) {
 	storedFilePath := "http://localhost:8080/images/" + fileName
 	account.ImagePath = storedFilePath
 
-	database.DATABASE.Save(&account)
+	database.DB.Save(&account)
 	c.JSON(http.StatusOK, gin.H{"message": "Image successfully changed", "image": storedFilePath})
 }
 
@@ -61,7 +61,7 @@ func CheckPin(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Query("id"))
 	var account models.Account
 
-	database.DATABASE.Find(&account, id)
+	database.DB.Find(&account, id)
 	if len(account.Pin) != 0 {
 		c.JSON(http.StatusOK, gin.H{"pin_set": true})
 	} else {
@@ -69,7 +69,7 @@ func CheckPin(c *gin.Context) {
 	}
 }
 
-func ChangePin(c * gin.Context) {
+func ChangePin(c *gin.Context) {
 	var request models.ChangePinRequest
 	var account models.Account
 
@@ -80,7 +80,7 @@ func ChangePin(c * gin.Context) {
 		return
 	}
 
-	database.DATABASE.Find(&account, request.Id)
+	database.DB.Find(&account, request.Id)
 	if len(account.Pin) != 0 {
 		c.JSON(http.StatusConflict, gin.H{"error": "You can only change your PIN once. Contact our administrator to change it again"})
 		return
@@ -92,7 +92,7 @@ func ChangePin(c * gin.Context) {
 	}
 
 	account.SetPin(request.Pin)
-	database.DATABASE.Save(&account)
+	database.DB.Save(&account)
 	c.JSON(http.StatusOK, gin.H{"message": "PIN successfully set"})
 }
 
@@ -107,7 +107,7 @@ func ChangePassword(c *gin.Context) {
 		return
 	}
 
-	database.DATABASE.Find(&account, request.Id)
+	database.DB.Find(&account, request.Id)
 	err = account.ComparePassword(request.OldPass)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Incorrect old password"})
@@ -125,7 +125,7 @@ func ChangePassword(c *gin.Context) {
 	}
 
 	account.SetPassword(request.RepeatPass)
-	database.DATABASE.Save(&account)
+	database.DB.Save(&account)
 	c.JSON(http.StatusOK, gin.H{"message": "Password successfully changed"})
 }
 
@@ -134,19 +134,19 @@ func SendAllCustomerData(c *gin.Context) {
 	var formattedDatas []map[string]interface{}
 
 	// Pull data from the requests table inside the database
-	database.DATABASE.Where(map[string]interface{}{"account_status": "accepted", "is_admin": false}).Find(&customerDatas)
+	database.DB.Where(map[string]interface{}{"account_status": "accepted", "is_admin": false}).Find(&customerDatas)
 
 	for _, data := range customerDatas {
 		formattedDatas = append(formattedDatas, gin.H{
-			"ID": data.ID,
-			"CreatedAt": data.CreatedAt,
-			"first_name": data.FirstName,
-			"last_name": data.LastName,
-			"email": data.Email,
-			"username": data.Username,
-			"image_path": data.ImagePath,
+			"ID":             data.ID,
+			"CreatedAt":      data.CreatedAt,
+			"first_name":     data.FirstName,
+			"last_name":      data.LastName,
+			"email":          data.Email,
+			"username":       data.Username,
+			"image_path":     data.ImagePath,
 			"account_number": data.AccountNumber,
-			"balance": data.Balance,
+			"balance":        data.Balance,
 		})
 	}
 
@@ -167,7 +167,7 @@ func EditData(c *gin.Context) {
 		return
 	}
 
-	database.DATABASE.Find(&account, request.Id)
+	database.DB.Find(&account, request.Id)
 
 	// Update account data
 	account.FirstName = request.FirstName
@@ -176,7 +176,7 @@ func EditData(c *gin.Context) {
 	account.Username = request.Username
 	account.Balance = request.Balance
 
-	database.DATABASE.Save(&account)
+	database.DB.Save(&account)
 	c.JSON(http.StatusOK, gin.H{"message": "Data successfully edited"})
 }
 
@@ -190,9 +190,9 @@ func ResetPIN(c *gin.Context) {
 		return
 	}
 
-	database.DATABASE.Find(&account, request.Id)
+	database.DB.Find(&account, request.Id)
 	account.Pin = nil
-	database.DATABASE.Save(&account)
+	database.DB.Save(&account)
 	c.JSON(http.StatusOK, gin.H{"message": "PIN reset successful"})
 }
 
@@ -200,7 +200,7 @@ func DeleteAccount(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Query("id"))
 	var account models.Account
 
-	database.DATABASE.Find(&account, id)
-	database.DATABASE.Delete(&account)
+	database.DB.Find(&account, id)
+	database.DB.Delete(&account)
 	c.JSON(http.StatusOK, gin.H{"message": "Delete account successful"})
 }

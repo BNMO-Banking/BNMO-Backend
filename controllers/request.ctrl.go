@@ -28,7 +28,7 @@ func AddRequest(c *gin.Context) {
 	newAmount := int64(math.Floor(conversion))
 	request.ConvertedAmount = newAmount
 
-	create := database.DATABASE.Create(&request)
+	create := database.DB.Create(&request)
 	if create.Error != nil {
 		log.Println("Adding request failed: Failed inserting to database", create.Error.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Failed inserting request to database"})
