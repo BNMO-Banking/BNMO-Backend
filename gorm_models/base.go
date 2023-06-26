@@ -14,7 +14,8 @@ type Base struct {
 	DeletedAt *time.Time `sql:"index"`
 }
 
-func (base *Base) BeforeCreate(db *gorm.DB) {
+func (base *Base) BeforeCreate(db *gorm.DB) error {
 	uuid := uuid.New()
 	db.Statement.SetColumn("ID", uuid)
+	return nil
 }
