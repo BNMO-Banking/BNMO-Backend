@@ -1,9 +1,9 @@
 package database
 
 import (
+	"BNMO/enum"
 	gormmodels "BNMO/gorm_models"
-	"BNMO/models"
-	"database/sql"
+	"BNMO/utils"
 	"fmt"
 	"os"
 
@@ -35,64 +35,20 @@ func Initialize() {
 		&gormmodels.Base{}, &gormmodels.Account{}, &gormmodels.Admin{}, &gormmodels.Customer{}, &gormmodels.CustomerAddress{}, &gormmodels.Request{}, &gormmodels.Transfer{})
 
 	DB = db
-	// seed(DB)
+	seed(DB)
 }
 
 func seed(db *gorm.DB) {
-	var accounts []models.Account
-	admin := models.Account{
-		IsAdmin:       sql.NullBool{Bool: true, Valid: true},
-		AccountStatus: sql.NullString{String: "accepted", Valid: true},
-		FirstName:     "Admin",
-		LastName:      "Admin",
-		Email:         "admin@gmail.com",
-		Username:      "admin",
-		ImagePath:     "./images/Admin.png",
-		AccountNumber: "1",
-		Balance:       0,
-	}
-	admin.SetPassword("admin")
-
-	user1 := models.Account{
-		IsAdmin:       sql.NullBool{Bool: false, Valid: true},
-		AccountStatus: sql.NullString{String: "accepted", Valid: true},
-		FirstName:     "John",
-		LastName:      "Doe",
-		Email:         "johndoe@gmail.com",
-		Username:      "johndoe123",
-		ImagePath:     "./images/johndoe.png",
-		AccountNumber: "100-100-1000",
-		Balance:       0,
-	}
-	user1.SetPassword("user1")
-
-	user2 := models.Account{
-		IsAdmin:       sql.NullBool{Bool: false, Valid: true},
-		AccountStatus: sql.NullString{String: "accepted", Valid: true},
-		FirstName:     "Sarah",
-		LastName:      "Baker",
-		Email:         "sarahbaker@gmail.com",
-		Username:      "sarahbaker123",
-		ImagePath:     "./images/sarahbaker.png",
-		AccountNumber: "100-100-1001",
-		Balance:       0,
-	}
-	user2.SetPassword("user2")
-
-	user3 := models.Account{
-		IsAdmin:       sql.NullBool{Bool: false, Valid: true},
-		AccountStatus: sql.NullString{String: "accepted", Valid: true},
-		FirstName:     "Sam",
-		LastName:      "Smith",
-		Email:         "samsmith@gmail.com",
-		Username:      "samsmith123",
-		ImagePath:     "./images/samsmith.png",
-		AccountNumber: "100-100-1002",
-		Balance:       0,
-	}
-	user3.SetPassword("user3")
-
-	accounts = append(accounts, admin, user1, user2, user3)
-
-	db.Create(&accounts)
+	pass, _ := utils.HashPassword("password")
+	db.Create(&gormmodels.Admin{
+		Role: enum.CHIEF,
+		Account: gormmodels.Account{
+			Email:       "admin@gmail.com",
+			Username:    "admin",
+			FirstName:   "Super",
+			LastName:    "Admin",
+			Password:    pass,
+			AccountType: enum.ADMIN,
+		},
+	})
 }
