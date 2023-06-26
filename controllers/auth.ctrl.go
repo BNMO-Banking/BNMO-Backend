@@ -8,6 +8,7 @@ import (
 	"BNMO/token"
 	"BNMO/utils"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -42,7 +43,7 @@ func RegisterAccount(c *gin.Context) {
 
 	err = database.DB.Where("email=?", request.Email).First(&account).Error
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		utils.HandleBadRequest(c, "Register", "Email already exist")
+		utils.HandleRecordNotFound(c, "Register", "Email already exist")
 		return
 	}
 
@@ -55,42 +56,47 @@ func RegisterAccount(c *gin.Context) {
 	// Validate username availability
 	err = database.DB.Where("username=?", request.Username).First(&account).Error
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		utils.HandleBadRequest(c, "Register", "Username already taken")
+		utils.HandleRecordNotFound(c, "Register", "Username already taken")
 		return
 	}
 
 	// File handling
-	filePath := utils.SaveFile(c, request.IdCard)
+	filePath := utils.SaveFile(c, request.IdCard, enum.FILE_ID_CARD)
+	if len(filePath) == 0 {
+		return
+	}
 
 	// Hashing password
 	password, err := utils.HashPassword(request.Password)
 	if err != nil {
 		utils.HandleInternalServerError(c, err, "Register", "Failed to hash password")
+		return
 	}
 
 	// Create new data entry
-	newAccount := gormmodels.CustomerAddress{
-		AddressLine1: request.AddressLine1,
-		AddressLine2: request.AddressLine2,
-		State:        request.State,
-		PostalCode:   request.PostalCode,
-		Country:      request.Country,
-		Customer: gormmodels.Customer{
-			Status:      enum.ACCOUNT_PENDING,
-			PhoneNumber: request.PhoneNumber,
-			IdCardPath:  filePath,
-			Account: gormmodels.Account{
-				FirstName:   request.FirstName,
-				LastName:    request.LastName,
-				Email:       request.Email,
-				Username:    request.Username,
-				Password:    password,
-				AccountType: enum.CUSTOMER,
-			},
+	newAccount := gormmodels.Customer{
+		Status:      enum.ACCOUNT_PENDING,
+		PhoneNumber: request.PhoneNumber,
+		IdCardPath:  filePath,
+		Address: gormmodels.CustomerAddress{
+			AddressLine1: request.AddressLine1,
+			AddressLine2: request.AddressLine2,
+			City:         request.City,
+			State:        request.State,
+			PostalCode:   request.PostalCode,
+			Country:      request.Country,
+		},
+		Account: gormmodels.Account{
+			FirstName:   request.FirstName,
+			LastName:    request.LastName,
+			Email:       request.Email,
+			Username:    request.Username,
+			Password:    password,
+			AccountType: enum.CUSTOMER,
 		},
 	}
 
-	database.DB.Create(newAccount)
+	database.DB.Create(&newAccount)
 	c.JSON(http.StatusOK, gin.H{"message": "Registration successful. Please wait for validation"})
 }
 
@@ -98,66 +104,79 @@ func LoginAccount(c *gin.Context) {
 	var request models.LoginReq
 	var account gormmodels.Account
 
-	// Bind arriving json into login model
 	err := c.BindJSON(&request)
 	if err != nil {
-		utils.HandleBadRequest(c, "Login", "Failed to bind request")
+		utils.HandleInternalServerError(c, err, "Login", "Failed to bind request")
 		return
 	}
 
 	// Fetch account
-	err = database.DB.Where("email=? OR username=?", request.EmailUsername).First(&account).Error
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		utils.HandleBadRequest(c, "Login", "Email / username is incorrect")
+	err = database.DB.Where("email = ?", request.EmailUsername).Or("username = ?", request.EmailUsername).First(&account).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		utils.HandleRecordNotFound(c, "Login", "Email / username is incorrect")
 		return
 	}
 
 	// Compare password
-	err = utils.ComparePassword(request.Password, account.Password)
+	err = utils.ComparePassword(account.Password, request.Password)
+	fmt.Println(err)
 	if err != nil {
 		utils.HandleBadRequest(c, "Login", "Incorrect password")
+		return
 	}
 
 	// Check if admin or customer
 	if account.AccountType == enum.ADMIN {
 		var admin gormmodels.Admin
 
-		database.DB.Where("account_id?=", account.ID).First(&admin)
+		database.DB.Preload("Account").Where("account_id?=", account.ID).First(&admin)
 
-		token, err := token.GenerateJWT(account.ID.String())
+		token, err := token.GenerateJWT(account.ID.String(), account.AccountType)
 		if err != nil {
 			utils.HandleInternalServerError(c, err, "Login", "Failed to generate token")
+			return
 		}
 
-		resAccount := models.LoginResAccount{
+		response := models.LoginResAccount{
 			Email:       account.Email,
 			Username:    account.Username,
 			AccountType: account.AccountType,
 			AccountRole: admin.Role,
 		}
+
 		c.JSON(http.StatusOK, models.LoginRes{
-			Account: resAccount,
+			Account: response,
 			Token:   token,
 		},
 		)
 	} else if account.AccountType == enum.CUSTOMER {
 		var customer gormmodels.Customer
 		// Check account validation status
-		database.DB.Where("account_id=?", account.ID).First(&customer)
+		database.DB.Preload("Account").Where("account_id=?", account.ID).First(&customer)
 		if customer.Status == enum.ACCOUNT_ACCEPTED {
-			token, err := token.GenerateJWT(account.ID.String())
+			token, err := token.GenerateJWT(account.ID.String(), account.AccountType)
 			if err != nil {
 				utils.HandleInternalServerError(c, err, "Login", "Failed to generate token")
+				return
 			}
 
-			resAccount := models.LoginResAccount{
+			response := models.LoginResAccount{
 				Email:       account.Email,
 				Username:    account.Username,
 				AccountType: account.AccountType,
 			}
+
+			var pinStatus enum.PinStatus
+			if len(customer.AccountNumber) == 0 {
+				pinStatus = enum.PIN_UNSET
+			} else {
+				pinStatus = enum.PIN_SET
+			}
+
 			c.JSON(http.StatusOK, models.LoginRes{
-				Account: resAccount,
-				Token:   token,
+				Account:   response,
+				PinStatus: pinStatus,
+				Token:     token,
 			},
 			)
 		} else if customer.Status == enum.ACCOUNT_PENDING {
