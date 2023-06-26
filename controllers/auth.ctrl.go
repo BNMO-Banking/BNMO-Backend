@@ -104,10 +104,9 @@ func LoginAccount(c *gin.Context) {
 	var request models.LoginReq
 	var account gormmodels.Account
 
-	// Bind arriving json into login model
 	err := c.BindJSON(&request)
 	if err != nil {
-		utils.HandleBadRequest(c, "Login", "Failed to bind request")
+		utils.HandleInternalServerError(c, err, "Login", "Failed to bind request")
 		return
 	}
 
