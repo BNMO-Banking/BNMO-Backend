@@ -1,6 +1,9 @@
 package models
 
-import "BNMO/enum"
+import (
+	"BNMO/enum"
+	"mime/multipart"
+)
 
 type ProfileRes struct {
 	AccountNumber      string           `json:"account_number"`
@@ -19,4 +22,17 @@ type ProfileRes struct {
 	State              string           `json:"state"`
 	PostalCode         string           `json:"postal_code"`
 	Country            string           `json:"country"`
+}
+
+type EditProfileReq struct {
+	FirstName      string                `form:"first_name"`
+	LastName       string                `form:"last_name"`
+	PhoneNumber    string                `form:"phone_number"`
+	ProfilePicture *multipart.FileHeader `form:"profile_pic"`
+	AddressLine1   string                `form:"address_line_1"`
+	AddressLine2   string                `form:"address_line_2"`
+	City           string                `form:"city"`
+	State          string                `form:"state"`
+	PostalCode     string                `form:"postal_code"`
+	Country        string                `form:"country"`
 }
