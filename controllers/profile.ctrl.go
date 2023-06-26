@@ -17,7 +17,7 @@ func GetProfile(c *gin.Context) {
 	id := c.Param("id")
 	var customer gormmodels.Customer
 
-	err := database.DB.Preload("Account").Preload("Address").Where("account_id=?", id).First(&customer).Error
+	err := database.DB.Preload("Account").Preload("Address").Where("account_id = ?", id).First(&customer).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		utils.HandleRecordNotFound(c, "Get profile", "")
 		return
@@ -59,7 +59,7 @@ func EditProfile(c *gin.Context) {
 
 	// User changing their image
 	if request.ProfilePicture.Size != 0 {
-		database.DB.Preload("Account").Where("account_id=?", id).First(&customer)
+		database.DB.Where("account_id = ?", id).First(&customer)
 		if len(customer.ProfilePicturePath) != 0 {
 			err := utils.DeleteFile(customer.ProfilePicturePath)
 			if err != nil {
@@ -70,7 +70,7 @@ func EditProfile(c *gin.Context) {
 		filePath = utils.SaveFile(c, request.ProfilePicture, enum.FILE_PROFILE_PICTURE)
 	}
 
-	database.DB.Preload("Account").Preload("Address").Where("account_id=?", id).Updates(gormmodels.Customer{
+	database.DB.Preload("Account").Preload("Address").Where("account_id = ?", id).Updates(gormmodels.Customer{
 		Account: gormmodels.Account{
 			FirstName: request.FirstName,
 			LastName:  request.LastName,
