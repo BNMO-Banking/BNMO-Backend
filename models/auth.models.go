@@ -35,6 +35,7 @@ type LoginResAccount struct {
 }
 
 type LoginRes struct {
-	Account LoginResAccount `json:"account"`
-	Token   string          `json:"token"`
+	Account   LoginResAccount `json:"account"`
+	PinStatus enum.PinStatus  `json:"pin_status"`
+	Token     string          `json:"token"`
 }

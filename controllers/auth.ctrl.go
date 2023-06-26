@@ -166,9 +166,17 @@ func LoginAccount(c *gin.Context) {
 				AccountType: account.AccountType,
 			}
 
+			var pinStatus enum.PinStatus
+			if len(customer.AccountNumber) == 0 {
+				pinStatus = enum.PIN_UNSET
+			} else {
+				pinStatus = enum.PIN_SET
+			}
+
 			c.JSON(http.StatusOK, models.LoginRes{
-				Account: response,
-				Token:   token,
+				Account:   response,
+				PinStatus: pinStatus,
+				Token:     token,
 			},
 			)
 		} else if customer.Status == enum.ACCOUNT_PENDING {
