@@ -20,3 +20,15 @@ func HandleInternalServerError(c *gin.Context, err error, function string, messa
 	c.JSON(http.StatusInternalServerError, gin.H{"error": errorMessage})
 	return
 }
+
+func HandleRecordNotFound(c *gin.Context, function string, message string) {
+	var errorMessage string
+	if len(message) > 0 {
+		errorMessage = fmt.Sprintf("%s failed: %s", function, message)
+	} else {
+		errorMessage = fmt.Sprintf("%s failed: Record not found", function)
+	}
+
+	c.JSON(http.StatusBadRequest, gin.H{"error": errorMessage})
+	return
+}
