@@ -54,7 +54,7 @@ func RegisterAccount(c *gin.Context) {
 	}
 
 	// Validate username availability
-	err = database.DB.Where("username=?", request.Username).First(&account).Error
+	err = database.DB.Where("username = ?", request.Username).First(&account).Error
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		utils.HandleRecordNotFound(c, "Register", "Username already taken")
 		return
@@ -129,7 +129,7 @@ func LoginAccount(c *gin.Context) {
 	if account.AccountType == enum.ADMIN {
 		var admin gormmodels.Admin
 
-		database.DB.Preload("Account").Where("account_id?=", account.ID).First(&admin)
+		database.DB.Preload("Account").Where("account_id = ?", account.ID).First(&admin)
 
 		token, err := token.GenerateJWT(account.ID.String(), account.AccountType)
 		if err != nil {
@@ -152,7 +152,7 @@ func LoginAccount(c *gin.Context) {
 	} else if account.AccountType == enum.CUSTOMER {
 		var customer gormmodels.Customer
 		// Check account validation status
-		database.DB.Preload("Account").Where("account_id=?", account.ID).First(&customer)
+		database.DB.Preload("Account").Where("account_id = ?", account.ID).First(&customer)
 		if customer.Status == enum.ACCOUNT_ACCEPTED {
 			token, err := token.GenerateJWT(account.ID.String(), account.AccountType)
 			if err != nil {
