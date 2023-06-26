@@ -1,7 +1,9 @@
 package token
 
 import (
+	"BNMO/enum"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -9,29 +11,33 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-const SecretKey = "secret"
+var (
+	SecretKey string = os.Getenv("JWT_SECRET")
+)
 
-func GenerateJWT(issuer string) (string, error) {
-	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
-		Issuer: issuer,
-		ExpiresAt: time.Now().Add(time.Hour*24).Unix(),
+func GenerateJWT(issuer string, role enum.AccountType) (string, error) {
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"iss":  issuer,
+		"role": role,
+		"exp":  time.Now().Add(time.Hour * 24).Unix(),
 	})
 
 	return claims.SignedString([]byte(SecretKey))
 }
 
-func ParseJWT(c *gin.Context) error {
+func ParseJWT(c *gin.Context) (jwt.MapClaims, error) {
 	tokenString := ExtractToken(c)
-	_, err := jwt.ParseWithClaims(tokenString, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
+	claims := jwt.MapClaims{}
+	_, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(SecretKey), nil
 	})
 
 	if err != nil {
 		fmt.Println("Failed parsing")
-		return err
+		return nil, err
 	}
 
-	return nil
+	return claims, nil
 }
 
 func ExtractToken(c *gin.Context) string {
