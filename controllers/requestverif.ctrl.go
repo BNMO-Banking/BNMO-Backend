@@ -64,7 +64,7 @@ func ValidateRequest(c *gin.Context) {
 				database.DB.Where("id = ?", id).Updates(gormmodels.Request{
 					Status: enum.REQUEST_REJECTED,
 				})
-				utils.HandleBadRequest(c, "Validate request", "Insufficient funds")
+				utils.HandleBadRequest(c, "Insufficient funds")
 				return
 			} else {
 				newBalance = request.Customer.Balance.Sub(request.ConvertedAmount)

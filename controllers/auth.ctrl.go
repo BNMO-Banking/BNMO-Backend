@@ -27,35 +27,35 @@ func RegisterAccount(c *gin.Context) {
 
 	// Validate password
 	if len(request.Password) < 8 {
-		utils.HandleBadRequest(c, "Register", "Password too short")
+		utils.HandleBadRequest(c, "Password too short")
 		return
 	} else if strings.Compare(request.Password, request.ConfirmPassword) != 0 {
-		utils.HandleBadRequest(c, "Register", "Confirm password do not match")
+		utils.HandleBadRequest(c, "Confirm password do not match")
 		return
 	}
 
 	// Validate email and availability
 	if !utils.ValidateEmail(request.Email) {
-		utils.HandleBadRequest(c, "Register", "Invalid email")
+		utils.HandleBadRequest(c, "Invalid email")
 		return
 	}
 
 	err = database.DB.Where("email=?", request.Email).First(&account).Error
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		utils.HandleRecordNotFound(c, "Register", "Email already exist")
+		utils.HandleRecordNotFound(c, "Email already exist")
 		return
 	}
 
 	// Validate phone number
 	if !utils.ValidatePhoneNumber(request.PhoneNumber) {
-		utils.HandleBadRequest(c, "Register", "Invalid phone number")
+		utils.HandleBadRequest(c, "Invalid phone number")
 		return
 	}
 
 	// Validate username availability
 	err = database.DB.Where("username = ?", request.Username).First(&account).Error
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		utils.HandleRecordNotFound(c, "Register", "Username already taken")
+		utils.HandleRecordNotFound(c, "Username already taken")
 		return
 	}
 
@@ -111,14 +111,14 @@ func LoginAccount(c *gin.Context) {
 	// Fetch account
 	err = database.DB.Where("email = ?", request.EmailUsername).Or("username = ?", request.EmailUsername).First(&account).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		utils.HandleRecordNotFound(c, "Login", "Email / username is incorrect")
+		utils.HandleRecordNotFound(c, "Email / username is incorrect")
 		return
 	}
 
 	// Compare password
 	err = utils.ComparePassword(account.Password, request.Password)
 	if err != nil {
-		utils.HandleBadRequest(c, "Login", "Incorrect password")
+		utils.HandleBadRequest(c, "Incorrect password")
 		return
 	}
 

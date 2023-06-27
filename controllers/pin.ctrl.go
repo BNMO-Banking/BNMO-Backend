@@ -47,7 +47,7 @@ func ComparePin(c *gin.Context) {
 	combined := utils.CombinePin(request.Id, request.Pin)
 	err = utils.ComparePin(customer.Pin, combined)
 	if err != nil {
-		utils.HandleBadRequest(c, "Compare pin", "Incorrect PIN")
+		utils.HandleBadRequest(c, "Incorrect PIN")
 		return
 	}
 
