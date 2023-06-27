@@ -28,7 +28,7 @@ func NewRedisCache(host string, db int, expires time.Duration) RedisCache {
 	}
 }
 
-func (cache *redisCache) getRatesClient() *redis.Client {
+func (cache *redisCache) getCacheClient() *redis.Client {
 	return redis.NewClient(&redis.Options{
 		Addr:     cache.host,
 		Password: "",
@@ -37,7 +37,7 @@ func (cache *redisCache) getRatesClient() *redis.Client {
 }
 
 func (cache *redisCache) SetCache(key string, value interface{}) {
-	client := cache.getRatesClient()
+	client := cache.getCacheClient()
 	setter := client.Set(ctx, key, value, cache.expires*time.Second)
 	if setter.Err() != nil {
 		fmt.Println("Failed to set value in redis cache", setter.Err().Error())
@@ -50,19 +50,19 @@ func (cache *redisCache) SetCache(key string, value interface{}) {
 // i/o timeout.
 // Possible fix: Restart device
 func (cache *redisCache) GetCache(key string, requested string) interface{} {
-	client := cache.getRatesClient()
+	client := cache.getCacheClient()
 	output, err := client.Get(ctx, key).Result()
 	if err == redis.Nil {
 		return -1
 	}
 
-	if (key == "symbols") {
+	if key == "symbols" {
 		var symbols models.SymbolsCache
-		
+
 		json.Unmarshal([]byte(output), &symbols)
 
 		return symbols.Symbols
-	} else if (key == "rates") {
+	} else if key == "rates" {
 		var rates models.RatesCache
 
 		json.Unmarshal([]byte(output), &rates)
