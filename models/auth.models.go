@@ -3,6 +3,8 @@ package models
 import (
 	"BNMO/enum"
 	"mime/multipart"
+
+	"github.com/google/uuid"
 )
 
 type RegisterReq struct {
@@ -28,6 +30,7 @@ type LoginReq struct {
 }
 
 type LoginResAccount struct {
+	Id          uuid.UUID        `json:"id"`
 	Email       string           `json:"email"`
 	Username    string           `json:"username"`
 	AccountType enum.AccountType `json:"account_type"`
