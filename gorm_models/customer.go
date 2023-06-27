@@ -21,5 +21,7 @@ type Customer struct {
 	AccountID          uuid.UUID
 	Address            CustomerAddress `gorm:"foreignKey:AddressID"`
 	AddressID          uuid.UUID
+	Requests           []Request   `gorm:"foreignKey:CustomerID"`
+	Transfers          []Transfer  `gorm:"foreignKey:SourceID"`
 	Associates         []*Customer `gorm:"many2many:customer_associates"`
 }

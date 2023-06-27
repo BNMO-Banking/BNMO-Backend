@@ -19,7 +19,7 @@ func GetProfile(c *gin.Context) {
 
 	err := database.DB.Preload("Account").Preload("Address").Where("id = ?", id).First(&customer).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		utils.HandleRecordNotFound(c, "Get profile", "")
+		utils.HandleRecordNotFound(c, "")
 		return
 	}
 

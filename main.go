@@ -9,6 +9,8 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+
+	"math/rand"
 )
 
 var (
@@ -26,6 +28,9 @@ func main() {
 	// Initialize database using GORM
 	database.Initialize()
 
+	// Setup random seed
+	rand.Seed(time.Now().UnixNano())
+
 	// Set up CORS policy
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:3001"},
@@ -42,5 +47,7 @@ func main() {
 	routes.RequestRoutes(router)
 	routes.RequestVerifRoutes(router)
 	routes.PinRoutes(router)
+	routes.AssociateRoutes(router)
+	routes.TransferRoutes(router)
 	router.Run()
 }
