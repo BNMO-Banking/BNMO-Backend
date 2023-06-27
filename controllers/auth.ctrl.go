@@ -8,7 +8,6 @@ import (
 	"BNMO/token"
 	"BNMO/utils"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -118,7 +117,6 @@ func LoginAccount(c *gin.Context) {
 
 	// Compare password
 	err = utils.ComparePassword(account.Password, request.Password)
-	fmt.Println(err)
 	if err != nil {
 		utils.HandleBadRequest(c, "Login", "Incorrect password")
 		return
