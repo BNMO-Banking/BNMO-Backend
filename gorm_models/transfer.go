@@ -11,8 +11,8 @@ type Transfer struct {
 	Amount          int64           `gorm:"not null"`
 	ConvertedAmount decimal.Decimal `gorm:"not null; type:numeric"`
 	Description     string          `sql:"type:text"`
-	Source          Customer
+	Source          Customer        `gorm:"foreignKey:SourceID;references:ID"`
 	SourceID        uuid.UUID
-	Destination     Customer
+	Destination     Customer `gorm:"foreignKey:DestinationID;references:ID"`
 	DestinationID   uuid.UUID
 }
