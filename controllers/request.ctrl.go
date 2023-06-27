@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"BNMO/database"
+	gormmodels "BNMO/gorm_models"
 	"BNMO/models"
-	"log"
-	"math"
+	"BNMO/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,28 +12,25 @@ import (
 
 // Customer add and subtract requests
 func AddRequest(c *gin.Context) {
-	var request models.Request
+	var request models.RequestReq
 
 	// Bind arriving json into a request model
 	err := c.BindJSON(&request)
 	if err != nil {
-		log.Println("Adding request failed: Failed binding json", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Failed binding request"})
+		utils.HandleInternalServerError(c, err, "Add request", "Failed to bind request")
 		return
 	}
 
 	// Calculate conversion rate
-	_, rate := getRatesFromRedis(request.Currency)
-	conversion := float64(request.Amount) / rate
-	newAmount := int64(math.Floor(conversion))
-	request.ConvertedAmount = newAmount
+	converted_amount := calculateConversion(request.Currency, request.Amount)
 
-	create := database.DB.Create(&request)
-	if create.Error != nil {
-		log.Println("Adding request failed: Failed inserting to database", create.Error.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Failed inserting request to database"})
-		return
-	}
+	database.DB.Create(&gormmodels.Request{
+		RequestType:     request.RequestType,
+		Currency:        request.Currency,
+		Amount:          request.Amount,
+		ConvertedAmount: converted_amount,
+		CustomerID:      request.Id,
+	})
 
 	c.JSON(http.StatusOK, gin.H{"message": "Request successfully added. Please wait for validation"})
 }
