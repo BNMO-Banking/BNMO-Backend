@@ -11,10 +11,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 )
 
 var (
-	redisClient redis.RedisCache = redis.NewRedisCache("bnmo-redis:6379", 0, time.Hour*24)
+	redisClient redis.RedisCache = redis.NewRedisCache("localhost:6379", 0, time.Hour*24)
 )
 
 func requestSymbolsFromAPI() map[string]string {
@@ -115,8 +116,8 @@ func GetSymbols(c *gin.Context) {
 	})
 }
 
-func calculateConversion(currency string, amount int64) float64 {
+func calculateConversion(currency string, amount int64) decimal.Decimal {
 	_, rate := getRatesFromRedis(currency)
 	conversion := float64(amount) / rate
-	return math.Floor(conversion)
+	return decimal.NewFromFloat(math.Floor(conversion))
 }

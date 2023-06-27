@@ -3,6 +3,8 @@ package models
 import (
 	"BNMO/enum"
 	"mime/multipart"
+
+	"github.com/shopspring/decimal"
 )
 
 type ProfileRes struct {
@@ -13,7 +15,7 @@ type ProfileRes struct {
 	FirstName          string           `json:"first_name"`
 	LastName           string           `json:"last_name"`
 	CardNumber         string           `json:"card_number"`
-	Balance            float32          `json:"balance"`
+	Balance            decimal.Decimal  `json:"balance"`
 	PhoneNumber        string           `json:"phone_number"`
 	ProfilePicturePath string           `json:"profile_pic_path"`
 	AddressLine1       string           `json:"address_line_1"`
