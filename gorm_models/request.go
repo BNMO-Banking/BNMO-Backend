@@ -9,12 +9,12 @@ import (
 
 type Request struct {
 	Base
-	RequestType     enum.ReqType    `gorm:"not null"`
-	Currency        string          `gorm:"not null"`
-	Amount          int64           `gorm:"not null"`
-	ConvertedAmount decimal.Decimal `gorm:"not null; type:numeric"`
-	Status          string          `gorm:"not null; default:'PENDING"`
-	Remarks         string          `sql:"type:text"`
+	RequestType     enum.ReqType       `gorm:"not null"`
+	Currency        string             `gorm:"not null"`
+	Amount          int64              `gorm:"not null"`
+	ConvertedAmount decimal.Decimal    `gorm:"not null; type:numeric"`
+	Status          enum.RequestStatus `gorm:"not null; default:'PENDING"`
+	Remarks         string             `sql:"type:text"`
 	Customer        Customer
 	CustomerID      uuid.UUID
 }
