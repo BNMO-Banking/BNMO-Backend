@@ -62,7 +62,7 @@ func GetAssociates(c *gin.Context) {
 
 	database.DB.
 		Model(&gormmodels.Customer{}).
-		Select("customers.account_number, accounts.first_name, accounts.last_name").
+		Select("associates.account_number, accounts.first_name, accounts.last_name").
 		Joins("JOIN customer_associates ON customer_associates.customer_id = customers.id").
 		Joins("JOIN customers associates ON associates.id = customer_associates.associate_id").
 		Joins("JOIN accounts ON accounts.id = associates.account_id").
