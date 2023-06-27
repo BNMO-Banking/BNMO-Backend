@@ -13,11 +13,21 @@ import (
 // Customer add and subtract requests
 func AddRequest(c *gin.Context) {
 	var request models.RequestReq
+	var customer gormmodels.Customer
 
 	// Bind arriving json into a request model
 	err := c.BindJSON(&request)
 	if err != nil {
 		utils.HandleInternalServerError(c, err, "Add request", "Failed to bind request")
+		return
+	}
+
+	database.DB.Where("id = ?", request.Id).First(&customer)
+	// Check pin validity
+	combined := utils.CombinePin(request.Id, request.Pin)
+	err = utils.ComparePin(customer.Pin, combined)
+	if err != nil {
+		utils.HandleBadRequest(c, "Add request", "Incorrect PIN")
 		return
 	}
 

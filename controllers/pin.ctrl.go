@@ -43,8 +43,9 @@ func ComparePin(c *gin.Context) {
 		return
 	}
 
-	database.DB.First(&customer, request.Id)
-	err = utils.ComparePin(customer.Pin, request.Pin)
+	database.DB.Where("id = ?", request.Id).First(&customer)
+	combined := utils.CombinePin(request.Id, request.Pin)
+	err = utils.ComparePin(customer.Pin, combined)
 	if err != nil {
 		utils.HandleBadRequest(c, "Compare pin", "Incorrect PIN")
 		return
