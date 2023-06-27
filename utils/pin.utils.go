@@ -10,8 +10,7 @@ import (
 )
 
 func HashPin(id uuid.UUID, pin string) ([]byte, error) {
-	combined := fmt.Sprintf(os.Getenv("PIN_FORMAT"), id.String(), pin)
-	fmt.Println(combined, "combined")
+	combined := CombinePin(id, pin)
 
 	salt, err := strconv.Atoi(os.Getenv("PIN_SALT"))
 	if err != nil {
@@ -28,4 +27,8 @@ func HashPin(id uuid.UUID, pin string) ([]byte, error) {
 
 func ComparePin(pin1 []byte, pin2 string) error {
 	return bcrypt.CompareHashAndPassword(pin1, []byte(pin2))
+}
+
+func CombinePin(id uuid.UUID, pin string) string {
+	return fmt.Sprintf(os.Getenv("PIN_FORMAT"), id.String(), pin)
 }
