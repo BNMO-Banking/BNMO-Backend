@@ -10,7 +10,7 @@ import (
 type Customer struct {
 	Base
 	AccountNumber      string             `gorm:"unique; default:null"`
-	Pin                string             `gorm:"unique; default:null"`
+	Pin                []byte             `gorm:"unique; default:null"`
 	CardNumber         string             `gorm:"unique; default:null"`
 	Balance            decimal.Decimal    `gorm:"not null; default:0; type:numeric"`
 	Status             enum.AccountStatus `gorm:"not null; default:'PENDING'"`
