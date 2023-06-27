@@ -4,6 +4,7 @@ import (
 	"BNMO/enum"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 type Customer struct {
@@ -11,7 +12,7 @@ type Customer struct {
 	AccountNumber      string             `gorm:"unique; default:null"`
 	Pin                string             `gorm:"unique; default:null"`
 	CardNumber         string             `gorm:"unique; default:null"`
-	Balance            float32            `gorm:"not null; default:0" sql:"type:decimal(12, 2)"`
+	Balance            decimal.Decimal    `gorm:"not null; default:0; type:numeric"`
 	Status             enum.AccountStatus `gorm:"not null; default:'PENDING'"`
 	PhoneNumber        string             `gorm:"not null"`
 	IdCardPath         string             `gorm:"not null"`

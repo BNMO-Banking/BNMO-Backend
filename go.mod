@@ -9,6 +9,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1
+	github.com/shopspring/decimal v1.3.1
 	golang.org/x/crypto v0.3.0
 	gorm.io/driver/mysql v1.3.5
 	gorm.io/gorm v1.23.8
