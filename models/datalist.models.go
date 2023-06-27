@@ -4,6 +4,7 @@ import (
 	"BNMO/enum"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 type PageMetadata struct {
@@ -29,5 +30,24 @@ type AccountData struct {
 
 type AccountDataList struct {
 	Data     []AccountData `json:"data"`
+	Metadata PageMetadata  `json:"metadata"`
+}
+
+type RequestData struct {
+	Id              uuid.UUID       `json:"id"`
+	RequestType     enum.ReqType    `json:"request_type"`
+	Currency        string          `json:"currency"`
+	Amount          int64           `json:"amount"`
+	ConvertedAmount decimal.Decimal `json:"converted_amount"`
+	Status          string          `json:"status"`
+	Remarks         string          `json:"remarks"`
+	FirstName       string          `json:"first_name"`
+	LastName        string          `json:"last_name"`
+	AccountNumber   string          `json:"account_number"`
+	PhoneNumber     string          `json:"phone_number"`
+}
+
+type RequestDataList struct {
+	Data     []RequestData `json:"data"`
 	Metadata PageMetadata  `json:"metadata"`
 }

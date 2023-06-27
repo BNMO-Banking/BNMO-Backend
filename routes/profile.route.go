@@ -10,5 +10,5 @@ import (
 func ProfileRoutes(route *gin.Engine) {
 	profile := route.Group("/profile").Use(middleware.CustomerMiddleware())
 	profile.GET("/get/:id", controllers.GetProfile)
-	profile.POST("/edit/:id", controllers.EditProfile)
+	profile.PUT("/edit/:id", controllers.EditProfile)
 }

@@ -75,7 +75,6 @@ func RegisterAccount(c *gin.Context) {
 
 	// Create new data entry
 	newAccount := gormmodels.Customer{
-		Status:      enum.ACCOUNT_PENDING,
 		PhoneNumber: request.PhoneNumber,
 		IdCardPath:  filePath,
 		Address: gormmodels.CustomerAddress{
@@ -161,6 +160,7 @@ func LoginAccount(c *gin.Context) {
 			}
 
 			response := models.LoginResAccount{
+				Id:          customer.ID,
 				Email:       account.Email,
 				Username:    account.Username,
 				AccountType: account.AccountType,

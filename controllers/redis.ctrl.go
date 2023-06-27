@@ -6,15 +6,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 )
 
-
 var (
-	redisClient redis.RedisCache = redis.NewRedisCache("bnmo-redis:6379", 0, time.Hour * 24)
+	redisClient redis.RedisCache = redis.NewRedisCache("localhost:6379", 0, time.Hour*24)
 )
 
 func requestSymbolsFromAPI() map[string]string {
@@ -76,7 +77,7 @@ func requestRatesFromAPI(requestedKey string) float64 {
 func getSymbolsFromRedis() (string, map[string]string) {
 	// Check cache availability
 	cacheEntry := redisClient.GetCache("symbols", "")
-	
+
 	// Cache hit events
 	if cacheEntry != -1 && cacheEntry != -2 {
 		output := cacheEntry.(map[string]string)
@@ -87,14 +88,14 @@ func getSymbolsFromRedis() (string, map[string]string) {
 	// Cache miss events
 	fmt.Println("Pulling symbols value from API")
 	apiEntry := requestSymbolsFromAPI()
-	
+
 	return "API", apiEntry
 }
 
 func getRatesFromRedis(requestedKey string) (string, float64) {
 	// Check cache availability
 	cacheEntry := redisClient.GetCache("rates", requestedKey)
-	
+
 	// Cache hit events
 	if cacheEntry != -1 && cacheEntry != -2 {
 		fmt.Println("Value symbols found within redis")
@@ -104,14 +105,19 @@ func getRatesFromRedis(requestedKey string) (string, float64) {
 	// Cache miss events
 	fmt.Println("Pulling symbols value from API")
 	apiEntry := requestRatesFromAPI(requestedKey)
-	
+
 	return "API", apiEntry
 }
 
-
-func GetSymbols(c * gin.Context) {
+func GetSymbols(c *gin.Context) {
 	_, symbols := getSymbolsFromRedis()
 	c.JSON(http.StatusOK, gin.H{
 		"symbols": symbols,
 	})
+}
+
+func calculateConversion(currency string, amount int64) decimal.Decimal {
+	_, rate := getRatesFromRedis(currency)
+	conversion := float64(amount) / rate
+	return decimal.NewFromFloat(math.Floor(conversion))
 }

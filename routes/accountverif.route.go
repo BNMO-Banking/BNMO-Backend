@@ -8,7 +8,7 @@ import (
 )
 
 func AccountVerifRoutes(route *gin.Engine) {
-	auth := route.Group("/account-verif").Use(middleware.AdminMiddleware())
-	auth.GET("/get", controllers.GetPendingAccounts)
-	auth.POST("/validate/:id/:status", controllers.ValidateAccount)
+	account_verif := route.Group("/account-verif").Use(middleware.AdminMiddleware())
+	account_verif.GET("/get", controllers.GetPendingAccounts)
+	account_verif.PUT("/validate/:id/:status", controllers.ValidateAccount)
 }

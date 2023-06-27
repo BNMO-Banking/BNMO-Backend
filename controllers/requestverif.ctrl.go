@@ -2,109 +2,89 @@ package controllers
 
 import (
 	"BNMO/database"
+	"BNMO/enum"
+	gormmodels "BNMO/gorm_models"
 	"BNMO/models"
-	"log"
+	"BNMO/utils"
 	"math"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 )
 
-// Admin accept or reject requests
-func ValidateRequests(c *gin.Context) {
-	var validate models.ValidateRequest
-	var account models.Account
-	var request models.Request
-
-	// Bind arriving json into a validate request model
-	err := c.BindJSON(&validate)
-	if err != nil {
-		log.Println("Validate request failed: Failed binding json", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error: Failed binding request"})
-		return
-	}
-
-	database.DB.Find(&request, validate.RequestID)
-
-	// If status is accepted, start procedures
-	if validate.Status == "accepted" {
-		// Check statements
-		// Pull data from request and account tables
-		database.DB.Find(&account, request.DestinationID)
-
-		// Request type: add
-		if request.RequestType == "add" {
-			newBalance := account.Balance + request.ConvertedAmount
-			database.DB.Model(&account).Update("balance", newBalance)
-		}
-
-		// Request type: subtract
-		if request.RequestType == "subtract" {
-			// If balance is insufficient, reject the request
-			if account.Balance < request.ConvertedAmount {
-				database.DB.Model(&request).Update("status", "rejected")
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Insufficient balance"})
-				return
-			} else {
-				newBalance := account.Balance - request.ConvertedAmount
-				database.DB.Model(&account).Update("balance", newBalance)
-			}
-		}
-
-		// Update value inside request table
-		database.DB.Model(&request).Update("status", validate.Status)
-		c.JSON(http.StatusOK, gin.H{"message": "Successfully accepted"})
-		return
-
-	} else if validate.Status == "rejected" {
-		// Update value inside request table
-		database.DB.Model(&request).Update("status", validate.Status)
-		c.JSON(http.StatusOK, gin.H{"message": "Successfully rejected"})
-		return
-	} else {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Validate request failed: Unable to parse status"})
-		return
-	}
-
-}
-
-// Admin display requests
 func GetPendingRequests(c *gin.Context) {
-	// Specify limitations
 	page, _ := strconv.Atoi(c.Query("page"))
-	// filterType := c.DefaultQuery("filter", "")
-	// filterKey := c.DefaultQuery("key", "")
-	limit := 5
+	limit := 10
 	offset := (page - 1) * limit
 
 	var total int64
-	var requests []models.Request
-	formattedRequests := make([]map[string]interface{}, 0)
+	var requests []models.RequestData
 
-	// Pull data from the requests table inside the database
-	// Pull only based on the number of offsets and limits specified
-	database.DB.Preload("Destination").Where("status=?", "pending").Offset(offset).Limit(limit).Find(&requests)
-	database.DB.Model(&models.Request{}).Where("status=?", "pending").Count(&total)
-
-	for _, request := range requests {
-		formattedRequests = append(formattedRequests, gin.H{
-			"ID":               request.ID,
-			"account_number":   request.Destination.AccountNumber,
-			"request_type":     request.RequestType,
-			"currency":         request.Currency,
-			"amount":           request.Amount,
-			"converted_amount": request.ConvertedAmount,
-		})
-	}
+	database.DB.
+		Model(&gormmodels.Request{}).
+		Select("requests.id, requests.request_type, requests.currency, requests.amount, requests.converted_amount, requests.status, requests.remarks, accounts.first_name, accounts.last_name, customers.account_number, customers.phone_number").
+		Joins("JOIN customers ON requests.customer_id = customers.id").
+		Joins("JOIN accounts ON customers.account_id = accounts.id").
+		Scan(&requests).
+		Offset(offset).
+		Limit(limit).
+		Count(&total)
 
 	// Return data to frontend
-	c.JSON(http.StatusOK, gin.H{
-		"data": formattedRequests,
-		"metadata": gin.H{
-			"total":     total,
-			"page":      page,
-			"last_page": math.Ceil(float64(total) / float64(limit)),
+	c.JSON(http.StatusOK, models.RequestDataList{
+		Data: requests,
+		Metadata: models.PageMetadata{
+			Total:    total,
+			Page:     page,
+			LastPage: math.Ceil(float64(total) / float64(limit)),
 		},
 	})
+}
+
+func ValidateRequest(c *gin.Context) {
+	id := c.Param("id")
+	status := c.Param("status")
+
+	// If status is accepted, start procedures
+	if status == string(enum.REQUEST_ACCEPTED) {
+		var request gormmodels.Request
+		var newBalance decimal.Decimal
+		database.DB.Preload("Customer").Where("id = ?", id).First(&request)
+
+		if request.RequestType == enum.ADD {
+			newBalance = request.Customer.Balance.Add(request.ConvertedAmount)
+		}
+
+		// Request type: subtract
+		if request.RequestType == enum.SUBTRACT {
+			// If balance is insufficient, reject the request
+			if request.Customer.Balance.LessThan(request.ConvertedAmount) {
+				database.DB.Where("id = ?", id).Updates(gormmodels.Request{
+					Status: enum.REQUEST_REJECTED,
+				})
+				utils.HandleBadRequest(c, "Validate request", "Insufficient funds")
+				return
+			} else {
+				newBalance = request.Customer.Balance.Sub(request.ConvertedAmount)
+			}
+		}
+
+		database.DB.Where("id = ?", id).Updates(gormmodels.Request{
+			Status: enum.REQUEST_ACCEPTED,
+		})
+
+		database.DB.Where("id = ?", request.CustomerID).Updates(gormmodels.Customer{
+			Balance: newBalance,
+		})
+		c.JSON(http.StatusOK, gin.H{"message": "Request successfully accepted"})
+		return
+	} else if status == string(enum.REQUEST_REJECTED) {
+		database.DB.Where("id = ?", id).Updates(gormmodels.Request{
+			Status: enum.REQUEST_REJECTED,
+		})
+		c.JSON(http.StatusOK, gin.H{"message": "Request successfully rejected"})
+		return
+	}
 }
