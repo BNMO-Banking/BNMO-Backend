@@ -11,4 +11,5 @@ type RequestReq struct {
 	RequestType enum.ReqType `json:"request_type"`
 	Currency    string       `json:"currency"`
 	Amount      int64        `json:"amount"`
+	Pin         string       `json:"pin"`
 }
