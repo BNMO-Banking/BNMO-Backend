@@ -48,5 +48,6 @@ func main() {
 	routes.RequestVerifRoutes(router)
 	routes.PinRoutes(router)
 	routes.AssociateRoutes(router)
+	routes.TransferRoutes(router)
 	router.Run()
 }
