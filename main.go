@@ -40,5 +40,6 @@ func main() {
 	routes.ProfileRoutes(router)
 	routes.AccountVerifRoutes(router)
 	routes.RequestRoutes(router)
+	routes.RequestVerifRoutes(router)
 	router.Run()
 }
