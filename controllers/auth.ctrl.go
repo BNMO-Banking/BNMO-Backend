@@ -144,6 +144,7 @@ func LoginAccount(c *gin.Context) {
 		c.JSON(http.StatusOK, models.LoginRes{
 			Account: response,
 			Token:   token,
+			Message: "Login successful",
 		},
 		)
 	} else if account.AccountType == enum.CUSTOMER {
@@ -158,10 +159,11 @@ func LoginAccount(c *gin.Context) {
 			}
 
 			response := models.LoginResAccount{
-				Id:          customer.ID,
-				Email:       account.Email,
-				Username:    account.Username,
-				AccountType: account.AccountType,
+				Id:            customer.ID,
+				Email:         account.Email,
+				Username:      account.Username,
+				AccountNumber: customer.AccountNumber,
+				AccountType:   account.AccountType,
 			}
 
 			var pinStatus enum.PinStatus
@@ -175,6 +177,7 @@ func LoginAccount(c *gin.Context) {
 				Account:   response,
 				PinStatus: pinStatus,
 				Token:     token,
+				Message:   "Login successful",
 			},
 			)
 		} else if customer.Status == enum.ACCOUNT_PENDING {

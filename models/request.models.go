@@ -13,3 +13,7 @@ type RequestReq struct {
 	Amount      int64        `json:"amount"`
 	Pin         string       `json:"pin"`
 }
+
+type RequestRemarksReq struct {
+	Remarks string `json:"remarks"`
+}

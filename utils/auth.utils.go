@@ -16,7 +16,7 @@ func ValidateEmail(email string) bool {
 }
 
 func ValidatePhoneNumber(phone string) bool {
-	Re := regexp.MustCompile(`^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$`)
+	Re := regexp.MustCompile(`^\+[0-9]+`)
 	return Re.MatchString(phone)
 }
 

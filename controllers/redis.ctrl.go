@@ -111,9 +111,7 @@ func getRatesFromRedis(requestedKey string) (string, float64) {
 
 func GetSymbols(c *gin.Context) {
 	_, symbols := getSymbolsFromRedis()
-	c.JSON(http.StatusOK, gin.H{
-		"symbols": symbols,
-	})
+	c.JSON(http.StatusOK, gin.H{"symbols": symbols})
 }
 
 func calculateConversion(currency string, amount int64) decimal.Decimal {

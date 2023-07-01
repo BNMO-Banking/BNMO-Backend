@@ -49,5 +49,7 @@ func main() {
 	routes.PinRoutes(router)
 	routes.AssociateRoutes(router)
 	routes.TransferRoutes(router)
+	routes.CurrencyRoutes(router)
+	routes.FilesRoutes(router)
 	router.Run()
 }

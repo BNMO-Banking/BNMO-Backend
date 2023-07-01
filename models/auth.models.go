@@ -30,15 +30,17 @@ type LoginReq struct {
 }
 
 type LoginResAccount struct {
-	Id          uuid.UUID        `json:"id"`
-	Email       string           `json:"email"`
-	Username    string           `json:"username"`
-	AccountType enum.AccountType `json:"account_type"`
-	AccountRole enum.AccountRole `json:"account_role"`
+	Id            uuid.UUID        `json:"id"`
+	Email         string           `json:"email"`
+	Username      string           `json:"username"`
+	AccountNumber string           `json:"account_number"`
+	AccountType   enum.AccountType `json:"account_type"`
+	AccountRole   enum.AccountRole `json:"account_role"`
 }
 
 type LoginRes struct {
 	Account   LoginResAccount `json:"account"`
 	PinStatus enum.PinStatus  `json:"pin_status"`
 	Token     string          `json:"token"`
+	Message   string          `json:"message"`
 }

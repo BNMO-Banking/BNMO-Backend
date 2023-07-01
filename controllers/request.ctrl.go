@@ -15,7 +15,6 @@ func AddRequest(c *gin.Context) {
 	var request models.RequestReq
 	var customer gormmodels.Customer
 
-	// Bind arriving json into a request model
 	err := c.BindJSON(&request)
 	if err != nil {
 		utils.HandleInternalServerError(c, err, "Add request", "Failed to bind request")

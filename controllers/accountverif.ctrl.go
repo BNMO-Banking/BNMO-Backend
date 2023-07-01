@@ -23,13 +23,14 @@ func GetPendingAccounts(c *gin.Context) {
 
 	database.DB.
 		Model(&gormmodels.Customer{}).
-		Select("accounts.id, accounts.first_name, accounts.last_name, customers.phone_number, customers.id_card_path, customers.status, customer_addresses.address_line1, customer_addresses.address_line2, customer_addresses.city, customer_addresses.state, customer_addresses.postal_code, customer_addresses.country").
+		Select("accounts.id, accounts.first_name, accounts.last_name, customers.phone_number, customers.id_card_path, customers.status, customers.created_at, customers.updated_at, customer_addresses.address_line1, customer_addresses.address_line2, customer_addresses.city, customer_addresses.state, customer_addresses.postal_code, customer_addresses.country").
 		Joins("JOIN accounts ON customers.account_id = accounts.id").
 		Joins("JOIN customer_addresses ON customers.address_id = customer_addresses.id").
 		Scan(&accounts).
 		Offset(offset).
-		Limit(limit).
-		Count(&total)
+		Limit(limit)
+
+	database.DB.Model(&gormmodels.Customer{}).Count(&total)
 
 	c.JSON(http.StatusOK, models.AccountDataList{
 		Data: accounts,

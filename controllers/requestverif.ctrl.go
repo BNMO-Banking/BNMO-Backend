@@ -24,13 +24,14 @@ func GetPendingRequests(c *gin.Context) {
 
 	database.DB.
 		Model(&gormmodels.Request{}).
-		Select("requests.id, requests.request_type, requests.currency, requests.amount, requests.converted_amount, requests.status, requests.remarks, accounts.first_name, accounts.last_name, customers.account_number, customers.phone_number").
-		Joins("JOIN customers ON requests.customer_id = customers.id").
-		Joins("JOIN accounts ON customers.account_id = accounts.id").
-		Scan(&requests).
 		Offset(offset).
 		Limit(limit).
-		Count(&total)
+		Select("requests.id, requests.request_type, requests.currency, requests.amount, requests.converted_amount, requests.status, requests.remarks, requests.created_at, requests.updated_at, accounts.first_name, accounts.last_name, customers.account_number, customers.phone_number").
+		Joins("JOIN customers ON requests.customer_id = customers.id").
+		Joins("JOIN accounts ON customers.account_id = accounts.id").
+		Scan(&requests)
+
+	database.DB.Model(&gormmodels.Request{}).Count(&total)
 
 	// Return data to frontend
 	c.JSON(http.StatusOK, models.RequestDataList{
@@ -81,8 +82,17 @@ func ValidateRequest(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "Request successfully accepted"})
 		return
 	} else if status == string(enum.REQUEST_REJECTED) {
+		var request models.RequestRemarksReq
+
+		err := c.BindJSON(&request)
+		if err != nil {
+			utils.HandleInternalServerError(c, err, "Validate request", "Failed to bind request")
+			return
+		}
+
 		database.DB.Where("id = ?", id).Updates(gormmodels.Request{
-			Status: enum.REQUEST_REJECTED,
+			Status:  enum.REQUEST_REJECTED,
+			Remarks: request.Remarks,
 		})
 		c.JSON(http.StatusOK, gin.H{"message": "Request successfully rejected"})
 		return

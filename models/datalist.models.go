@@ -2,6 +2,7 @@ package models
 
 import (
 	"BNMO/enum"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -26,6 +27,8 @@ type AccountData struct {
 	State        string             `json:"state"`
 	PostalCode   string             `json:"postal_code"`
 	Country      string             `json:"country"`
+	CreatedAt    time.Time          `json:"created_at"`
+	UpdatedAt    time.Time          `json:"updated_at"`
 }
 
 type AccountDataList struct {
@@ -45,6 +48,8 @@ type RequestData struct {
 	LastName        string          `json:"last_name"`
 	AccountNumber   string          `json:"account_number"`
 	PhoneNumber     string          `json:"phone_number"`
+	CreatedAt       time.Time       `json:"created_at"`
+	UpdatedAt       time.Time       `json:"updated_at"`
 }
 
 type RequestDataList struct {
