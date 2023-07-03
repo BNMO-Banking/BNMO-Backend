@@ -27,8 +27,6 @@ type ProfileRes struct {
 }
 
 type EditProfileReq struct {
-	FirstName      string                `form:"first_name"`
-	LastName       string                `form:"last_name"`
 	PhoneNumber    string                `form:"phone_number"`
 	ProfilePicture *multipart.FileHeader `form:"profile_pic"`
 	AddressLine1   string                `form:"address_line_1"`

@@ -24,6 +24,13 @@ func AddAssociates(c *gin.Context) {
 	}
 
 	database.DB.Preload("Associates").Where("id = ?", request.Id).First(&sourceCustomer)
+	// Check pin validity
+	combined := utils.CombinePin(request.Id, request.Pin)
+	err = utils.ComparePin(sourceCustomer.Pin, combined)
+	if err != nil {
+		utils.HandleBadRequest(c, "Incorrect PIN")
+		return
+	}
 
 	err = database.DB.Where("account_number = ?", request.DestinationNumber).First(&destinationCustomer).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {

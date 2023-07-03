@@ -7,6 +7,7 @@ import (
 	"BNMO/models"
 	"BNMO/utils"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -58,23 +59,23 @@ func EditProfile(c *gin.Context) {
 	}
 
 	// User changing their image
-	if request.ProfilePicture.Size != 0 {
-		database.DB.Where("id = ?", id).First(&customer)
-		if len(customer.ProfilePicturePath) != 0 {
-			err := utils.DeleteFile(customer.ProfilePicturePath)
-			if err != nil {
-				utils.HandleInternalServerError(c, err, "Edit profile", "Failed to delete file")
-				return
+	if request.ProfilePicture != nil {
+		if request.ProfilePicture.Size != 0 {
+			database.DB.Where("id = ?", id).First(&customer)
+			if len(customer.ProfilePicturePath) != 0 {
+				err := utils.DeleteFile(customer.ProfilePicturePath)
+				if err != nil {
+					utils.HandleInternalServerError(c, err, "Edit profile", "Failed to delete file")
+					return
+				}
 			}
+			filePath = utils.SaveFile(c, request.ProfilePicture, enum.FILE_PROFILE_PICTURE)
 		}
-		filePath = utils.SaveFile(c, request.ProfilePicture, enum.FILE_PROFILE_PICTURE)
 	}
 
-	database.DB.Preload("Account").Preload("Address").Where("id = ?", id).Updates(gormmodels.Customer{
-		Account: gormmodels.Account{
-			FirstName: request.FirstName,
-			LastName:  request.LastName,
-		},
+	fmt.Println(len(request.AddressLine1))
+
+	database.DB.Preload("Account").Preload("Address").Where("id = ?", id).Updates(&gormmodels.Customer{
 		PhoneNumber:        request.PhoneNumber,
 		ProfilePicturePath: filePath,
 		Address: gormmodels.CustomerAddress{
@@ -85,7 +86,7 @@ func EditProfile(c *gin.Context) {
 			PostalCode:   request.PostalCode,
 			Country:      request.Country,
 		},
-	}).First(&customer)
+	}).First((&customer))
 
 	response := models.ProfileRes{
 		AccountNumber:      customer.AccountNumber,

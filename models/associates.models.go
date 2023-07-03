@@ -7,6 +7,7 @@ import (
 type AddAssociatesReq struct {
 	Id                uuid.UUID `json:"id"`
 	DestinationNumber string    `json:"destination_number"`
+	Pin               string    `json:"pin"`
 }
 
 type DestinationsRes struct {
