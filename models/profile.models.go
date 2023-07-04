@@ -36,3 +36,11 @@ type EditProfileReq struct {
 	PostalCode     string                `form:"postal_code"`
 	Country        string                `form:"country"`
 }
+
+type ProfileStatistics struct {
+	Balance         decimal.Decimal   `json:"balance"`
+	TotalReceived   decimal.Decimal   `json:"total_received"`
+	TotalSpent      decimal.Decimal   `json:"total_spent"`
+	MonthlyReceived []decimal.Decimal `json:"monthly_received"`
+	MonthlySpending []decimal.Decimal `json:"monthly_spending"`
+}
