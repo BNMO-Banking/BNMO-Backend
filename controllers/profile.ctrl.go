@@ -110,6 +110,7 @@ func EditProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": response, "message": "Edit successful"})
 }
 
+// This still calculates all the money in/out since the beginning, not yet split by year
 func GetStatistics(c *gin.Context) {
 	id := c.Param("id")
 	year := c.Query("year")

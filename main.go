@@ -51,5 +51,6 @@ func main() {
 	routes.TransferRoutes(router)
 	routes.CurrencyRoutes(router)
 	routes.FilesRoutes(router)
+	routes.AdminDashboardRoutes(router)
 	router.Run()
 }
