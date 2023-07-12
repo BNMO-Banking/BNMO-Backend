@@ -48,17 +48,33 @@ func GetTransferHistory(c *gin.Context) {
 	limit := 10
 	offset := (page - 1) * limit
 
+	var inboundTransfers []models.TransferHistory
+	var outboundTransfers []models.TransferHistory
 	var transfers []models.TransferHistory
 	var total int64
 
 	database.DB.
 		Table("transfers").
 		Select("transfers.created_at, transfers.updated_at, transfers.currency, transfers.amount, transfers.converted_amount, transfers.status, transfers.description, customers.account_number, accounts.first_name, accounts.last_name").
-		Joins("JOIN customers ON transfers.destination_id = customers.id").
+		Where("destination_id = ?", id).
+		Joins("JOIN customers ON transfers.source_id = customers.id").
 		Joins("JOIN accounts ON customers.account_id = accounts.id").
-		Scan(&transfers).
+		Scan(&inboundTransfers).
 		Offset(offset).
 		Limit(limit)
+
+	database.DB.
+		Table("transfers").
+		Select("transfers.created_at, transfers.updated_at, transfers.currency, transfers.amount, transfers.converted_amount, transfers.status, transfers.description, customers.account_number, accounts.first_name, accounts.last_name").
+		Where("source_id = ?", id).
+		Joins("JOIN customers ON transfers.destination_id = customers.id").
+		Joins("JOIN accounts ON customers.account_id = accounts.id").
+		Scan(&outboundTransfers).
+		Offset(offset).
+		Limit(limit)
+
+	transfers = append(transfers, inboundTransfers...)
+	transfers = append(transfers, outboundTransfers...)
 
 	database.DB.
 		Model(&gormmodels.Transfer{}).
@@ -66,7 +82,10 @@ func GetTransferHistory(c *gin.Context) {
 		Count(&total)
 
 	c.JSON(http.StatusOK, models.TransferHistoryList{
-		Data: transfers,
+		Data: models.TransferTypes{
+			InboundTransfers:  inboundTransfers,
+			OutboundTransfers: outboundTransfers,
+		},
 		Metadata: models.PageMetadata{
 			Total:    total,
 			Page:     page,
