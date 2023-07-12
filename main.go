@@ -33,7 +33,7 @@ func main() {
 
 	// Set up CORS policy
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:3001"},
+		AllowOrigins:     []string{"https://bnmo.netlify.app"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "Static", "OPTIONS"},
 		AllowHeaders:     []string{"Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
