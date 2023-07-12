@@ -42,6 +42,7 @@ func main() {
 	}))
 
 	routes.AuthRoutes(router)
+	routes.CustomerHistoryRoutes(router)
 	routes.ProfileRoutes(router)
 	routes.AccountVerifRoutes(router)
 	routes.RequestRoutes(router)
