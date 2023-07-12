@@ -48,29 +48,20 @@ func GetTransferHistory(c *gin.Context) {
 	limit := 10
 	offset := (page - 1) * limit
 
-	var inboundTransfers []models.TransferHistory
-	var outboundTransfers []models.TransferHistory
+	var transfers []models.TransferHistory
 	var total int64
 
 	database.DB.
 		Table("transfers").
-		Select("transfers.created_at, transfers.updated_at, transfers.currency, transfers.amount, transfers.converted_amount, transfers.status, transfers.description, customers.account_number, accounts.first_name, accounts.last_name").
-		Where("destination_id = ?", id).
-		Joins("JOIN customers ON transfers.source_id = customers.id").
-		Joins("JOIN accounts ON customers.account_id = accounts.id").
-		Scan(&inboundTransfers).
+		Select("transfers.created_at, transfers.updated_at, transfers.currency, transfers.amount, transfers.converted_amount, transfers.status, transfers.description, sourceCust.account_number, destinationCust.account_number, sourceAcc.first_name, sourceAcc.last_name, destinationAcc.first_name, destinationAcc.last_name").
+		Where("source_id = ?", id).Or("destination_id = ?", id).
+		Joins("JOIN customers sourceCust ON transfers.source_id = sourceCust.id").
+		Joins("JOIN customers destinationCust ON transfers.source_id = destinationCust.id").
+		Joins("JOIN accounts sourceAcc ON sourceCust.account_id = sourceAcc.id").
+		Joins("JOIN accounts destinationAcc ON destinationCust.account_id = destinationAcc.id").
 		Offset(offset).
-		Limit(limit)
-
-	database.DB.
-		Table("transfers").
-		Select("transfers.created_at, transfers.updated_at, transfers.currency, transfers.amount, transfers.converted_amount, transfers.status, transfers.description, customers.account_number, accounts.first_name, accounts.last_name").
-		Where("source_id = ?", id).
-		Joins("JOIN customers ON transfers.destination_id = customers.id").
-		Joins("JOIN accounts ON customers.account_id = accounts.id").
-		Scan(&outboundTransfers).
-		Offset(offset).
-		Limit(limit)
+		Limit(limit).
+		Scan(&transfers)
 
 	database.DB.
 		Model(&gormmodels.Transfer{}).
@@ -78,10 +69,7 @@ func GetTransferHistory(c *gin.Context) {
 		Count(&total)
 
 	c.JSON(http.StatusOK, models.TransferHistoryList{
-		Data: models.TransferTypes{
-			InboundTransfers:  inboundTransfers,
-			OutboundTransfers: outboundTransfers,
-		},
+		Data: transfers,
 		Metadata: models.PageMetadata{
 			Total:    total,
 			Page:     page,

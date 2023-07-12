@@ -36,12 +36,7 @@ type TransferHistory struct {
 	LastName        string          `json:"last_name"`
 }
 
-type TransferTypes struct {
-	InboundTransfers  []TransferHistory `json:"inbound_list"`
-	OutboundTransfers []TransferHistory `json:"outbound_list"`
-}
-
 type TransferHistoryList struct {
-	Data     TransferTypes `json:"data"`
-	Metadata PageMetadata  `json:"metadata"`
+	Data     []TransferHistory `json:"data"`
+	Metadata PageMetadata      `json:"metadata"`
 }
