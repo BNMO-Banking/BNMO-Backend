@@ -50,7 +50,6 @@ func GetTransferHistory(c *gin.Context) {
 
 	var inboundTransfers []models.TransferHistory
 	var outboundTransfers []models.TransferHistory
-	var transfers []models.TransferHistory
 	var total int64
 
 	database.DB.
@@ -73,12 +72,9 @@ func GetTransferHistory(c *gin.Context) {
 		Offset(offset).
 		Limit(limit)
 
-	transfers = append(transfers, inboundTransfers...)
-	transfers = append(transfers, outboundTransfers...)
-
 	database.DB.
 		Model(&gormmodels.Transfer{}).
-		Where("source_id = ?", id).
+		Where("source_id = ?", id).Or("destination_id = ?", id).
 		Count(&total)
 
 	c.JSON(http.StatusOK, models.TransferHistoryList{
